@@ -2,7 +2,7 @@
 
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
 import { BalanceCard } from '@/components/dashboard/balance-card';
-import { SetupProgressCard } from '@/components/dashboard/setup-progress-card';
+import { GoalsProgressCard } from '@/components/dashboard/setup-progress-card';
 import { Card } from '@/components/ui/card';
 import {
   Loader2,
@@ -70,14 +70,17 @@ export default function DashboardPage() {
   }, [transactions]);
 
   const goalsData = useMemo(() => {
-    if (!goals) {
-      return { totalSaved: 0, firstGoal: null };
+    if (!goals || goals.length === 0) {
+      return { totalSaved: 0, completedGoals: 0, totalGoals: 0, firstGoal: null };
     }
     const totalSaved = goals.reduce(
       (acc, goal) => acc + goal.currentAmount,
       0
     );
-    return { totalSaved, firstGoal: goals[0] };
+    const totalGoals = goals.length;
+    const completedGoals = goals.filter(g => g.currentAmount >= g.targetAmount).length;
+    
+    return { totalSaved, firstGoal: goals[0], completedGoals, totalGoals };
   }, [goals]);
 
   const { totalIncome, totalExpenses } = dashboardData;
@@ -92,6 +95,8 @@ export default function DashboardPage() {
       </div>
     );
   }
+
+  const showGoalsProgress = goals && goals.length > 0;
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
@@ -138,7 +143,12 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      <SetupProgressCard />
+      {showGoalsProgress && (
+        <GoalsProgressCard 
+          completedGoals={goalsData.completedGoals} 
+          totalGoals={goalsData.totalGoals} 
+        />
+      )}
 
       {goals && goals.length > 0 && (
         <Card className="p-4">

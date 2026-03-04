@@ -2,13 +2,30 @@ import { Card } from '@/components/ui/card';
 import { ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 
-export function SetupProgressCard() {
+type GoalsProgressCardProps = {
+  completedGoals: number;
+  totalGoals: number;
+};
+
+export function GoalsProgressCard({
+  completedGoals,
+  totalGoals,
+}: GoalsProgressCardProps) {
+  const progress = totalGoals > 0 ? (completedGoals / totalGoals) * 100 : 0;
+  const circumference = 100.53; // 2 * PI * 16
+  const strokeDashoffset = circumference * (1 - progress / 100);
+
   return (
-    <Link href="#">
+    <Link href="/goals">
       <Card className="flex items-center justify-between p-4 transition-shadow hover:shadow-md bg-card">
         <div className="flex items-center gap-4">
           <div className="relative size-10">
-            <svg className="size-full" width="36" height="36" viewBox="0 0 36 36">
+            <svg
+              className="size-full"
+              width="36"
+              height="36"
+              viewBox="0 0 36 36"
+            >
               <circle
                 className="stroke-current text-secondary"
                 strokeWidth="3"
@@ -20,8 +37,8 @@ export function SetupProgressCard() {
               <circle
                 className="origin-center -rotate-90 stroke-current text-primary"
                 strokeWidth="3"
-                strokeDasharray="100.53"
-                strokeDashoffset="60.318" // 100.53 * (1 - 0.4)
+                strokeDasharray={circumference}
+                strokeDashoffset={strokeDashoffset}
                 strokeLinecap="round"
                 fill="none"
                 cx="18"
@@ -31,8 +48,10 @@ export function SetupProgressCard() {
             </svg>
           </div>
           <div>
-            <p className="font-semibold text-primary">Complete seu cadastro</p>
-            <p className="text-sm text-muted-foreground">2 de 5 passos completos</p>
+            <p className="font-semibold text-primary">Progresso das Metas</p>
+            <p className="text-sm text-muted-foreground">
+              {completedGoals} de {totalGoals} metas completas
+            </p>
           </div>
         </div>
         <ChevronRight className="size-5 text-muted-foreground" />
