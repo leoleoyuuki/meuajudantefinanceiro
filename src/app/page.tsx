@@ -173,6 +173,12 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex flex-col gap-6 lg:col-span-1">
+          <Button asChild size="sm" className="w-full">
+            <Link href="/add-transaction">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Novo Lançamento
+            </Link>
+          </Button>
           <GoalsProgressCard progressPercentage={goalsData.overallProgress} />
 
           {goalsSummary && goalsSummary.goalsCount > 0 ? (
@@ -184,7 +190,7 @@ export default function DashboardPage() {
                     <p className="font-semibold">Metas</p>
                   </div>
                 </div>
-                <p className="mt-2 font-headline text-2xl font-bold">
+                <p className="font-headline text-2xl font-bold">
                   {formatCurrency(goalsData.totalSaved)}
                 </p>
                 <p className="text-xs text-muted-foreground">Desde sempre</p>
@@ -230,7 +236,7 @@ export default function DashboardPage() {
                 Crie sua primeira meta
               </h2>
               <p className="text-muted-foreground">
-                Comece a planejar seu futuro financeiro.
+                Comece a planejar seu futuro financeiro criando sua primeira meta.
               </p>
               <Button asChild className="mt-4">
                 <Link href="/goals/add">
