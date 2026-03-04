@@ -120,120 +120,120 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <DashboardHeader />
-
-      <BalanceCard value={balance} />
-
-      <div className="grid grid-cols-2 gap-4">
-        <Card className="flex cursor-pointer items-center gap-3 p-4 transition-shadow hover:shadow-md">
-          <Wallet className="size-5 text-muted-foreground" />
-          <div>
-            <p className="text-sm font-medium">Receitas</p>
-            <p className="text-base font-semibold">
-              {formatCurrency(totalIncome)}
-            </p>
-          </div>
-        </Card>
-        <Card className="flex cursor-pointer items-center gap-3 p-4 transition-shadow hover:shadow-md">
-          <TrendingDown className="size-5 text-muted-foreground" />
-          <div>
-            <p className="text-sm font-medium">Despesas</p>
-            <p className="text-base font-semibold">
-              {formatCurrency(totalExpenses)}
-            </p>
-          </div>
-        </Card>
-        <Card className="flex cursor-pointer items-center gap-3 p-4 transition-shadow hover:shadow-md">
-          <FileClock className="size-5 text-muted-foreground" />
-          <div>
-            <p className="text-sm font-medium">Contas fixas</p>
-            <p className="text-base font-semibold text-muted-foreground">
-              Em breve
-            </p>
-          </div>
-        </Card>
-        <Card className="flex cursor-pointer items-center gap-3 p-4 transition-shadow hover:shadow-md">
-          <Repeat className="size-5 text-muted-foreground" />
-          <div>
-            <p className="text-sm font-medium">Ganhos fixos</p>
-            <p className="text-base font-semibold text-muted-foreground">
-              Em breve
-            </p>
-          </div>
-        </Card>
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="flex flex-col gap-6 lg:col-span-2">
+        <DashboardHeader />
+        <BalanceCard value={balance} />
+        <div className="grid grid-cols-2 gap-4">
+          <Card className="flex cursor-pointer items-center gap-3 p-4 transition-shadow hover:shadow-md">
+            <Wallet className="size-5 text-muted-foreground" />
+            <div>
+              <p className="text-sm font-medium">Receitas</p>
+              <p className="text-base font-semibold">
+                {formatCurrency(totalIncome)}
+              </p>
+            </div>
+          </Card>
+          <Card className="flex cursor-pointer items-center gap-3 p-4 transition-shadow hover:shadow-md">
+            <TrendingDown className="size-5 text-muted-foreground" />
+            <div>
+              <p className="text-sm font-medium">Despesas</p>
+              <p className="text-base font-semibold">
+                {formatCurrency(totalExpenses)}
+              </p>
+            </div>
+          </Card>
+          <Card className="flex cursor-pointer items-center gap-3 p-4 transition-shadow hover:shadow-md">
+            <FileClock className="size-5 text-muted-foreground" />
+            <div>
+              <p className="text-sm font-medium">Contas fixas</p>
+              <p className="text-base font-semibold text-muted-foreground">
+                Em breve
+              </p>
+            </div>
+          </Card>
+          <Card className="flex cursor-pointer items-center gap-3 p-4 transition-shadow hover:shadow-md">
+            <Repeat className="size-5 text-muted-foreground" />
+            <div>
+              <p className="text-sm font-medium">Ganhos fixos</p>
+              <p className="text-base font-semibold text-muted-foreground">
+                Em breve
+              </p>
+            </div>
+          </Card>
+        </div>
+        <MonthlyBalanceChart data={monthlySummaries || []} />
       </div>
 
-      <MonthlyBalanceChart data={monthlySummaries || []} />
-
-      <GoalsProgressCard progressPercentage={goalsData.overallProgress} />
-
-      {goalsSummary && goalsSummary.goalsCount > 0 ? (
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <PiggyBank className="size-6 text-primary" />
-              <p className="font-semibold">Metas</p>
+      <div className="flex flex-col gap-6 lg:col-span-1">
+        <GoalsProgressCard progressPercentage={goalsData.overallProgress} />
+        {goalsSummary && goalsSummary.goalsCount > 0 ? (
+          <Card className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <PiggyBank className="size-6 text-primary" />
+                <p className="font-semibold">Metas</p>
+              </div>
+              <Link
+                href="/goals"
+                className="text-xs font-semibold text-primary hover:underline"
+              >
+                Próximo depósito aqui
+              </Link>
             </div>
+            <p className="mt-2 font-headline text-2xl font-bold">
+              {formatCurrency(goalsData.totalSaved)}
+            </p>
+            <p className="text-xs text-muted-foreground">Desde sempre</p>
+
+            <hr className="my-4" />
+
+            {goalsData.firstGoal && (
+              <Link
+                href={`/goals`}
+                className="flex items-center justify-between py-2"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex size-8 items-center justify-center rounded-full bg-secondary">
+                    <Trophy className="size-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-semibold">{goalsData.firstGoal.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Economize{' '}
+                      {formatCurrency(goalsData.firstGoal.targetAmount)}
+                    </p>
+                  </div>
+                </div>
+                <ChevronRight className="size-5 text-muted-foreground" />
+              </Link>
+            )}
+
             <Link
               href="/goals"
-              className="text-xs font-semibold text-primary hover:underline"
+              className="mt-4 block w-full text-center text-sm font-semibold text-primary"
             >
-              Próximo depósito aqui
+              Ver todas as metas
             </Link>
-          </div>
-          <p className="mt-2 font-headline text-2xl font-bold">
-            {formatCurrency(goalsData.totalSaved)}
-          </p>
-          <p className="text-xs text-muted-foreground">Desde sempre</p>
-
-          <hr className="my-4" />
-
-          {goalsData.firstGoal && (
-            <Link
-              href={`/goals`}
-              className="flex items-center justify-between py-2"
-            >
-              <div className="flex items-center gap-3">
-                <div className="flex size-8 items-center justify-center rounded-full bg-secondary">
-                  <Trophy className="size-4 text-primary" />
-                </div>
-                <div>
-                  <p className="font-semibold">{goalsData.firstGoal.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Economize{' '}
-                    {formatCurrency(goalsData.firstGoal.targetAmount)}
-                  </p>
-                </div>
-              </div>
-              <ChevronRight className="size-5 text-muted-foreground" />
-            </Link>
-          )}
-
-          <Link
-            href="/goals"
-            className="mt-4 block w-full text-center text-sm font-semibold text-primary"
-          >
-            Ver todas as metas
-          </Link>
-        </Card>
-      ) : (
-        <Card className="flex flex-col items-center justify-center gap-4 p-8 text-center">
-          <Target className="size-12 text-muted-foreground" />
-          <h2 className="font-headline text-xl font-semibold">
-            Crie sua primeira meta
-          </h2>
-          <p className="text-muted-foreground">
-            Comece a planejar seu futuro financeiro.
-          </p>
-          <Button asChild className="mt-4">
-            <Link href="/goals/add">
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Criar Meta
-            </Link>
-          </Button>
-        </Card>
-      )}
+          </Card>
+        ) : (
+          <Card className="flex flex-col items-center justify-center gap-4 p-8 text-center">
+            <Target className="size-12 text-muted-foreground" />
+            <h2 className="font-headline text-xl font-semibold">
+              Crie sua primeira meta
+            </h2>
+            <p className="text-muted-foreground">
+              Comece a planejar seu futuro financeiro.
+            </p>
+            <Button asChild className="mt-4">
+              <Link href="/goals/add">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Criar Meta
+              </Link>
+            </Button>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }

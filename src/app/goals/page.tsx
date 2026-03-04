@@ -133,7 +133,7 @@ export default function GoalsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
+    <div className="flex flex-col gap-6">
       <PageHeader title="Metas Financeiras">
         <Button asChild>
           <Link href="/goals/add">
@@ -144,7 +144,7 @@ export default function GoalsPage() {
       </PageHeader>
 
       {goals && goals.length > 0 ? (
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {goals?.map((goal) => {
             const progress = (goal.currentAmount / goal.targetAmount) * 100;
             return (
