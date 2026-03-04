@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import { CalendarIcon, Loader2 } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -152,7 +153,7 @@ export function GoalForm() {
                       )}
                     >
                       {field.value ? (
-                        format(field.value, 'dd/MM/yyyy')
+                        format(field.value, 'dd/MM/yyyy', { locale: ptBR })
                       ) : (
                         <span>Escolha uma data</span>
                       )}

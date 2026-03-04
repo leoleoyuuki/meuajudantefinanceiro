@@ -29,6 +29,7 @@ import { cn } from '@/lib/utils';
 import { CalendarIcon, Loader2 } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -71,6 +72,11 @@ type TransactionFormValues = z.infer<typeof transactionFormSchema>;
 const defaultValues: Partial<TransactionFormValues> = {
   type: 'expense',
   date: new Date(),
+  amount: undefined,
+  description: '',
+  paymentMethod: '',
+  notes: '',
+  categoryId: '',
 };
 
 export function TransactionForm() {
@@ -307,7 +313,7 @@ export function TransactionForm() {
                         )}
                       >
                         {field.value ? (
-                          format(field.value, 'dd/MM/yyyy')
+                          format(field.value, 'dd/MM/yyyy', { locale: ptBR })
                         ) : (
                           <span>Escolha uma data</span>
                         )}
