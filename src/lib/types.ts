@@ -23,13 +23,15 @@ export type Category = {
   updatedAt: string;
 };
 
-export type Goal = {
+export type FinancialGoal = {
   id: string;
   userId: string;
   name: string;
   targetAmount: number;
   currentAmount: number;
-  deadline: string;
+  startDate: string;
+  targetDate?: string;
+  description?: string;
   createdAt: string;
   updatedAt: string;
 };
