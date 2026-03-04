@@ -1,45 +1,20 @@
 'use client';
 
-import { useUser, useAuth } from '@/firebase';
-import {
-  User,
-  LogOut,
-  Crown,
-  Gift,
-  Copy,
-  LifeBuoy,
-} from 'lucide-react';
+import { useAuth } from '@/firebase';
+import { Crown, Gift, Copy, LifeBuoy } from 'lucide-react';
 import { Button } from './ui/button';
 import Link from 'next/link';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { signOut } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/lib/utils';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { SidebarTrigger } from './ui/sidebar';
 
 export function Header() {
-  const { user } = useUser();
-  const auth = useAuth();
   const { toast } = useToast();
-
-  const handleLogout = () => {
-    if (auth) {
-      signOut(auth);
-    }
-  };
 
   const handleCopyCoupon = () => {
     const coupon = 'FINPRO15';
@@ -55,21 +30,21 @@ export function Header() {
 
   return (
     <header className="flex h-16 shrink-0 items-center justify-end gap-4 border-b bg-background px-4 md:px-6">
-        <SidebarTrigger className="md:hidden" />
-        <div className="flex-1" />
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button size="sm" className="h-8 rounded-full">
-              <Crown className="mr-2 size-4" />
-              Premium
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto">
-            <div className="text-sm">
-              Você tem <strong>30 dias</strong> restantes em seu teste.
-            </div>
-          </PopoverContent>
-        </Popover>
+      <SidebarTrigger className="md:hidden" />
+      <div className="flex-1" />
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button size="sm" className="h-8 rounded-full">
+            <Crown className="mr-2 size-4" />
+            Premium
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto">
+          <div className="text-sm">
+            Você tem <strong>30 dias</strong> restantes em seu teste.
+          </div>
+        </PopoverContent>
+      </Popover>
       <div className="flex items-center gap-2">
         <Popover>
           <PopoverTrigger asChild>
@@ -112,37 +87,6 @@ export function Header() {
             <span className="sr-only">Ajuda</span>
           </Link>
         </Button>
-         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Avatar className="size-9 cursor-pointer">
-              {user?.photoURL ? (
-                <AvatarImage src={user.photoURL} alt="User Avatar" />
-              ) : (
-                <AvatarFallback className="bg-secondary">
-                  <User className="size-5 text-muted-foreground" />
-                </AvatarFallback>
-              )}
-            </Avatar>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>
-              <p className="font-semibold">
-                {user?.displayName || 'Usuário'}
-              </p>
-              <p className="text-xs font-normal text-muted-foreground">
-                {user?.email || 'Login com Google'}
-              </p>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={handleLogout}
-              className="cursor-pointer text-destructive"
-            >
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>Sair</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
       </div>
     </header>
   );

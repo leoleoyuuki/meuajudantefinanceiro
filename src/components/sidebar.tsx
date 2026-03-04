@@ -14,11 +14,23 @@ import {
   History,
   PiggyBank,
   Tags,
-  Plus,
   Settings,
+  User,
+  LogOut,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useUser, useAuth } from '@/firebase';
+import { signOut } from 'firebase/auth';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 
 const navItems = [
   { href: '/', icon: Home, label: 'Início' },
@@ -29,47 +41,76 @@ const navItems = [
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const { user } = useUser();
+  const auth = useAuth();
+
+  const handleLogout = () => {
+    if (auth) {
+      signOut(auth);
+    }
+  };
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="group-data-[collapsible=icon]:justify-center">
-        <div className="flex items-center gap-2 group-data-[collapsible=icon]:hidden">
-          <PiggyBank className="size-6 text-primary" />
-          <h1 className="font-headline text-lg font-semibold">MeuAjudante</h1>
-        </div>
-        <PiggyBank className="hidden size-6 text-primary group-data-[collapsible=icon]:block" />
+      <SidebarHeader className="group-data-[collapsible=icon]:justify-center p-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex w-full items-center justify-center gap-2 rounded-md p-1 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+              <Avatar className="size-8">
+                {user?.photoURL ? (
+                  <AvatarImage src={user.photoURL} alt="User Avatar" />
+                ) : (
+                  <AvatarFallback className="bg-secondary text-xs font-semibold">
+                    {user?.displayName ? (
+                      user.displayName.substring(0, 2).toUpperCase()
+                    ) : (
+                      <User className="size-4 text-muted-foreground" />
+                    )}
+                  </AvatarFallback>
+                )}
+              </Avatar>
+              <div className="group-data-[collapsible=icon]:hidden">
+                <p className="max-w-[120px] truncate text-sm font-semibold">
+                  {user?.displayName || 'Usuário'}
+                </p>
+              </div>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" side="right">
+            <DropdownMenuLabel>
+              <p className="font-semibold">{user?.displayName || 'Usuário'}</p>
+              <p className="text-xs font-normal text-muted-foreground">
+                {user?.email || 'Login com Google'}
+              </p>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={handleLogout}
+              className="cursor-pointer text-destructive"
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>Sair</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </SidebarHeader>
       <SidebarContent>
-        <div className="p-2">
-          <SidebarMenuButton
-            asChild
-            tooltip="Nova Transação"
-            className="w-full justify-start bg-primary text-primary-foreground hover:bg-primary/90 group-data-[collapsible=icon]:justify-center"
-          >
-            <Link href="/add-transaction">
-              <Plus />
-              <span className="group-data-[collapsible=icon]:hidden">
-                Nova Transação
-              </span>
-            </Link>
-          </SidebarMenuButton>
-        </div>
         <SidebarMenu>
           {navItems.map((item) => (
             <SidebarMenuItem key={item.href}>
-                <SidebarMenuButton
-                  asChild
-                  isActive={pathname === item.href}
-                  tooltip={item.label}
-                  className="justify-start group-data-[collapsible=icon]:justify-center"
-                >
-                  <Link href={item.href}>
-                    <item.icon />
-                    <span className="group-data-[collapsible=icon]:hidden">
-                      {item.label}
-                    </span>
-                  </Link>
-                </SidebarMenuButton>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname === item.href}
+                tooltip={item.label}
+                className="justify-start group-data-[collapsible=icon]:justify-center"
+              >
+                <Link href={item.href}>
+                  <item.icon />
+                  <span className="group-data-[collapsible=icon]:hidden">
+                    {item.label}
+                  </span>
+                </Link>
+              </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
@@ -77,7 +118,10 @@ export function AppSidebar() {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton tooltip="Configurações" className="justify-start group-data-[collapsible=icon]:justify-center">
+            <SidebarMenuButton
+              tooltip="Configurações"
+              className="justify-start group-data-[collapsible=icon]:justify-center"
+            >
               <Settings />
               <span className="group-data-[collapsible=icon]:hidden">
                 Configurações
