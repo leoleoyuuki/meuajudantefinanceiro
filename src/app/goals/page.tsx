@@ -16,16 +16,33 @@ import {
   useFirestore,
   useUser,
   useMemoFirebase,
+  updateDocumentNonBlocking,
 } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { collection, doc } from 'firebase/firestore';
 import type { FinancialGoal } from '@/lib/types';
 import { Loader2, PlusCircle, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { useState } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
 
 export default function GoalsPage() {
   const firestore = useFirestore();
   const { user } = useUser();
+  const { toast } = useToast();
+
+  const [selectedGoal, setSelectedGoal] = useState<FinancialGoal | null>(null);
+  const [amountToAdd, setAmountToAdd] = useState('');
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const goalsQuery = useMemoFirebase(
     () =>
@@ -33,6 +50,62 @@ export default function GoalsPage() {
     [firestore, user]
   );
   const { data: goals, isLoading } = useCollection<FinancialGoal>(goalsQuery);
+
+  const handleAddAmount = () => {
+    if (!selectedGoal || !firestore || !user) return;
+    const numericAmount = parseFloat(amountToAdd);
+    if (isNaN(numericAmount) || numericAmount <= 0) {
+      toast({
+        title: 'Valor inválido',
+        description: 'Por favor, insira um número positivo.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const newCurrentAmount = selectedGoal.currentAmount + numericAmount;
+
+    if (newCurrentAmount > selectedGoal.targetAmount) {
+      toast({
+        title: 'Valor excede a meta',
+        description: 'O valor adicionado ultrapassa o total da meta.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const goalRef = doc(
+      firestore,
+      'users',
+      user.uid,
+      'financialGoals',
+      selectedGoal.id
+    );
+
+    updateDocumentNonBlocking(goalRef, {
+      currentAmount: newCurrentAmount,
+      updatedAt: new Date().toISOString(),
+    });
+
+    toast({
+      title: 'Valor adicionado!',
+      description: `${formatCurrency(
+        numericAmount
+      )} adicionado à meta "${selectedGoal.name}".`,
+    });
+
+    setIsDialogOpen(false);
+    setAmountToAdd('');
+    setSelectedGoal(null);
+  };
+
+  const handleDialogChange = (open: boolean) => {
+    if (!open) {
+      setAmountToAdd('');
+      setSelectedGoal(null);
+    }
+    setIsDialogOpen(open);
+  };
 
   if (isLoading) {
     return (
@@ -74,6 +147,22 @@ export default function GoalsPage() {
                     <span>{formatCurrency(goal.currentAmount)}</span>
                     <span>{formatCurrency(goal.targetAmount)}</span>
                   </div>
+                  <div className="pt-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => {
+                        setSelectedGoal(goal);
+                        setIsDialogOpen(true);
+                      }}
+                      disabled={goal.currentAmount >= goal.targetAmount}
+                    >
+                      {goal.currentAmount >= goal.targetAmount
+                        ? 'Meta Atingida!'
+                        : 'Adicionar Valor'}
+                    </Button>
+                  </div>
                 </CardContent>
                 {goal.targetDate && (
                   <CardFooter className="flex justify-end text-xs text-muted-foreground">
@@ -103,6 +192,39 @@ export default function GoalsPage() {
           </Button>
         </div>
       )}
+
+      <Dialog open={isDialogOpen} onOpenChange={handleDialogChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Adicionar valor para "{selectedGoal?.name}"
+            </DialogTitle>
+            <DialogDescription>
+              O valor atual é de{' '}
+              {formatCurrency(selectedGoal?.currentAmount ?? 0)}. Quanto você
+              gostaria de adicionar?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="relative">
+              <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-muted-foreground">
+                R$
+              </span>
+              <Input
+                id="amount"
+                type="number"
+                value={amountToAdd}
+                onChange={(e) => setAmountToAdd(e.target.value)}
+                placeholder="0,00"
+                className="pl-10 text-lg"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleAddAmount}>Adicionar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
