@@ -14,7 +14,7 @@ export function StatCard({ title, value, className }: StatCardProps) {
         <h3 className="font-medium">{title}</h3>
         <Eye className="size-4 text-muted-foreground" />
       </div>
-      <p className="font-headline text-3xl font-bold text-primary">{value}</p>
+      <p className="font-headline text-2xl font-normal text-primary">{value}</p>
     </div>
   );
 }
