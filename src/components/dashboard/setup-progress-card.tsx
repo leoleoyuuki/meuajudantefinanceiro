@@ -1,4 +1,4 @@
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 
@@ -15,7 +15,7 @@ export function GoalsProgressCard({
 
   return (
     <Link href="/goals">
-      <Card className="flex items-center justify-between p-4 transition-shadow hover:shadow-md bg-card">
+      <Card className="flex h-full items-center justify-between p-4 transition-shadow hover:shadow-md bg-card">
         <div className="flex items-center gap-4">
           <div className="relative size-10">
             <svg
