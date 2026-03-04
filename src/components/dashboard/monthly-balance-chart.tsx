@@ -19,8 +19,8 @@ import type { MonthlySummary } from '@/lib/types';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
-  BarChart,
-  Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -82,7 +82,7 @@ export function MonthlyBalanceChart({ data }: MonthlyBalanceChartProps) {
       <CardContent>
         <ChartContainer config={chartConfig} className="h-60 w-full">
           <ResponsiveContainer>
-            <BarChart data={chartData}>
+            <LineChart data={chartData}>
               <CartesianGrid vertical={false} />
               <XAxis
                 dataKey="month"
@@ -102,19 +102,23 @@ export function MonthlyBalanceChart({ data }: MonthlyBalanceChartProps) {
                 content={<ChartTooltipContent formatter={(value) => formatCurrency(Number(value))} />}
               />
               <ChartLegend content={<ChartLegendContent />} />
-              <Bar
+              <Line
+                type="monotone"
                 dataKey="totalIncome"
-                fill={chartConfig.totalIncome.color}
-                radius={4}
+                stroke={chartConfig.totalIncome.color}
+                strokeWidth={2}
+                dot={false}
                 name="Receitas"
               />
-              <Bar
+              <Line
+                type="monotone"
                 dataKey="totalExpense"
-                fill={chartConfig.totalExpense.color}
-                radius={4}
+                stroke={chartConfig.totalExpense.color}
+                strokeWidth={2}
+                dot={false}
                 name="Despesas"
               />
-            </BarChart>
+            </LineChart>
           </ResponsiveContainer>
         </ChartContainer>
       </CardContent>
