@@ -1,3 +1,7 @@
-{
-  "placeholderImages": []
-}
+[
+  {
+    "id": "user-avatar",
+    "src": "https://picsum.photos/seed/avatar/100/100",
+    "hint": "person portrait"
+  }
+]
