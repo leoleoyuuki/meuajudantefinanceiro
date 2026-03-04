@@ -2,9 +2,9 @@
 
 import {
   History,
-  LayoutDashboard,
+  Home,
   Plus,
-  Target,
+  PiggyBank,
   Tags,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -12,10 +12,10 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
 const navItems = [
-  { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/transactions', icon: History, label: 'Histórico' },
+  { href: '/', icon: Home, label: 'Início' },
+  { href: '/transactions', icon: History, label: 'Extrato' },
   { href: '/add-transaction', icon: Plus, label: 'Adicionar', isFab: true },
-  { href: '/goals', icon: Target, label: 'Metas' },
+  { href: '/goals', icon: PiggyBank, label: 'Metas' },
   { href: '/categories', icon: Tags, label: 'Categorias' },
 ];
 

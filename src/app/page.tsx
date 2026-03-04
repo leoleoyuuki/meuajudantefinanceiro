@@ -1,10 +1,19 @@
 'use client';
 
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
-import { SummaryCard } from '@/components/dashboard/summary-card';
-import { ArrowDown, ArrowUp, Loader2 } from 'lucide-react';
-import { CategorySpendingChart } from '@/components/dashboard/category-spending-chart';
-import { TopExpenses } from '@/components/dashboard/top-expenses';
+import { BalanceCard } from '@/components/dashboard/balance-card';
+import { SetupProgressCard } from '@/components/dashboard/setup-progress-card';
+import { Card } from '@/components/ui/card';
+import {
+  Loader2,
+  Wallet,
+  TrendingUp,
+  Shield,
+  CreditCard,
+  PiggyBank,
+  Trophy,
+  ChevronRight,
+} from 'lucide-react';
 import {
   useUser,
   useFirestore,
@@ -12,9 +21,11 @@ import {
   useMemoFirebase,
 } from '@/firebase';
 import { collection, query, where, orderBy } from 'firebase/firestore';
-import type { Transaction, Category } from '@/lib/types';
+import type { Transaction, FinancialGoal } from '@/lib/types';
 import { useMemo } from 'react';
 import { startOfMonth, endOfMonth } from 'date-fns';
+import { formatCurrency } from '@/lib/utils';
+import Link from 'next/link';
 
 export default function DashboardPage() {
   const firestore = useFirestore();
@@ -37,79 +48,42 @@ export default function DashboardPage() {
   const { data: transactions, isLoading: transactionsLoading } =
     useCollection<Transaction>(transactionsQuery);
 
-  const categoriesQuery = useMemoFirebase(
-    () => (user ? collection(firestore, 'users', user.uid, 'categories') : null),
+  const goalsQuery = useMemoFirebase(
+    () =>
+      user ? collection(firestore, 'users', user.uid, 'financialGoals') : null,
     [firestore, user]
   );
-  const { data: categories, isLoading: categoriesLoading } =
-    useCollection<Category>(categoriesQuery);
+  const { data: goals, isLoading: goalsLoading } =
+    useCollection<FinancialGoal>(goalsQuery);
 
   const dashboardData = useMemo(() => {
-    if (!transactions || !categories) {
-      return {
-        totalIncome: 0,
-        totalExpenses: 0,
-        spendingByCategory: [],
-        topExpenses: [],
-      };
+    if (!transactions) {
+      return { totalIncome: 0, totalExpenses: 0 };
     }
-
     const totalIncome = transactions
       .filter((t) => t.type === 'income')
       .reduce((acc, t) => acc + t.amount, 0);
-
     const totalExpenses = transactions
       .filter((t) => t.type === 'expense')
       .reduce((acc, t) => acc + t.amount, 0);
+    return { totalIncome, totalExpenses };
+  }, [transactions]);
 
-    const spendingByCategory = transactions
-      .filter((t) => t.type === 'expense')
-      .reduce(
-        (acc, t) => {
-          const category = categories.find((c) => c.id === t.categoryId);
-          if (!category) return acc;
+  const goalsData = useMemo(() => {
+    if (!goals) {
+      return { totalSaved: 0, firstGoal: null };
+    }
+    const totalSaved = goals.reduce(
+      (acc, goal) => acc + goal.currentAmount,
+      0
+    );
+    return { totalSaved, firstGoal: goals[0] };
+  }, [goals]);
 
-          const existing = acc.find((item) => item.category === category.name);
-          if (existing) {
-            existing.amount += t.amount;
-          } else {
-            acc.push({
-              category: category.name,
-              amount: t.amount,
-              fill: category.color,
-            });
-          }
-          return acc;
-        },
-        [] as { category: string; amount: number; fill: string }[]
-      );
+  const { totalIncome, totalExpenses } = dashboardData;
+  const balance = totalIncome - totalExpenses;
 
-    const topExpenses = transactions
-      .filter((t) => t.type === 'expense')
-      .sort((a, b) => b.amount - a.amount)
-      .slice(0, 3)
-      .map((t) => ({
-        ...t,
-        category: categories.find((c) => c.id === t.categoryId)!,
-      }));
-
-    return {
-      totalIncome,
-      totalExpenses,
-      spendingByCategory,
-      topExpenses,
-    };
-  }, [transactions, categories]);
-
-  const {
-    totalIncome,
-    totalExpenses,
-    spendingByCategory,
-    topExpenses,
-  } = dashboardData;
-  const savings = totalIncome - totalExpenses;
-
-  const isLoading = transactionsLoading || categoriesLoading;
+  const isLoading = transactionsLoading || goalsLoading;
 
   if (isLoading) {
     return (
@@ -123,27 +97,95 @@ export default function DashboardPage() {
     <div className="flex flex-col gap-6 p-4 md:p-6">
       <DashboardHeader />
 
-      <SummaryCard title="Balanço do Mês" value={savings} variant="primary" />
+      <BalanceCard value={balance} change={23.91} />
 
       <div className="grid grid-cols-2 gap-4">
-        <SummaryCard
-          title="Receitas"
-          value={totalIncome}
-          icon={ArrowUp}
-          variant="small"
-          iconClass="text-primary"
-        />
-        <SummaryCard
-          title="Despesas"
-          value={totalExpenses}
-          icon={ArrowDown}
-          variant="small"
-          iconClass="text-destructive"
-        />
+        <Card className="flex cursor-pointer items-center gap-3 p-4 transition-shadow hover:shadow-md">
+          <Wallet className="size-5 text-muted-foreground" />
+          <div>
+            <p className="text-sm font-medium">Receitas</p>
+            <p className="text-base font-semibold">
+              {formatCurrency(totalIncome)}
+            </p>
+          </div>
+        </Card>
+        <Card className="flex cursor-pointer items-center gap-3 p-4 transition-shadow hover:shadow-md">
+          <TrendingUp className="size-5 text-muted-foreground" />
+          <div>
+            <p className="text-sm font-medium">Despesas</p>
+            <p className="text-base font-semibold">
+              {formatCurrency(totalExpenses)}
+            </p>
+          </div>
+        </Card>
+        <Card className="flex cursor-pointer items-center gap-3 p-4 transition-shadow hover:shadow-md">
+          <Shield className="size-5 text-muted-foreground" />
+          <div>
+            <p className="text-sm font-medium">Pensões</p>
+            <p className="text-base font-semibold text-muted-foreground">
+              Em breve
+            </p>
+          </div>
+        </Card>
+        <Card className="flex cursor-pointer items-center gap-3 p-4 transition-shadow hover:shadow-md">
+          <CreditCard className="size-5 text-muted-foreground" />
+          <div>
+            <p className="text-sm font-medium">Cartão</p>
+            <p className="text-base font-semibold text-muted-foreground">
+              Em breve
+            </p>
+          </div>
+        </Card>
       </div>
 
-      <CategorySpendingChart data={spendingByCategory} />
-      <TopExpenses data={topExpenses} />
+      <SetupProgressCard />
+
+      {goals && goals.length > 0 && (
+        <Card className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <PiggyBank className="size-6 text-primary" />
+              <p className="font-semibold">Metas</p>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Próximo depósito aqui
+            </p>
+          </div>
+          <p className="mt-2 font-headline text-2xl font-bold">
+            {formatCurrency(goalsData.totalSaved)}
+          </p>
+          <p className="text-xs text-muted-foreground">Desde sempre</p>
+
+          <hr className="my-4" />
+
+          {goalsData.firstGoal && (
+            <Link
+              href={`/goals`}
+              className="flex items-center justify-between py-2"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex size-8 items-center justify-center rounded-full bg-secondary">
+                  <Trophy className="size-4 text-primary" />
+                </div>
+                <div>
+                  <p className="font-semibold">{goalsData.firstGoal.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Economize {formatCurrency(goalsData.firstGoal.targetAmount)}
+                  </p>
+                </div>
+              </div>
+              <ChevronRight className="size-5 text-muted-foreground" />
+            </Link>
+          )}
+
+          <Link
+            href="/goals"
+            className="mt-4 block w-full text-center text-sm font-semibold text-primary"
+          >
+            Ver todas as metas
+          </Link>
+        </Card>
+      )}
     </div>
   );
 }
