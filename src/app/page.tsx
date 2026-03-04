@@ -19,11 +19,12 @@ import {
   useFirestore,
   useCollection,
   useMemoFirebase,
+  useDoc,
 } from '@/firebase';
-import { collection, query, where, orderBy } from 'firebase/firestore';
-import type { Transaction, FinancialGoal } from '@/lib/types';
+import { collection, doc } from 'firebase/firestore';
+import type { FinancialGoal, MonthlySummary } from '@/lib/types';
 import { useMemo } from 'react';
-import { startOfMonth, endOfMonth } from 'date-fns';
+import { format } from 'date-fns';
 import { formatCurrency } from '@/lib/utils';
 import Link from 'next/link';
 
@@ -31,22 +32,14 @@ export default function DashboardPage() {
   const firestore = useFirestore();
   const { user } = useUser();
 
-  const transactionsQuery = useMemoFirebase(() => {
+  const summaryDocQuery = useMemoFirebase(() => {
     if (!user) return null;
-    const now = new Date();
-    const startDate = startOfMonth(now);
-    const endDate = endOfMonth(now);
-
-    return query(
-      collection(firestore, 'users', user.uid, 'transactions'),
-      orderBy('date', 'desc'),
-      where('date', '>=', startDate.toISOString()),
-      where('date', '<=', endDate.toISOString())
-    );
+    const summaryId = format(new Date(), 'yyyy-MM');
+    return doc(firestore, 'users', user.uid, 'monthlySummaries', summaryId);
   }, [firestore, user]);
 
-  const { data: transactions, isLoading: transactionsLoading } =
-    useCollection<Transaction>(transactionsQuery);
+  const { data: monthlySummary, isLoading: summaryLoading } =
+    useDoc<MonthlySummary>(summaryDocQuery);
 
   const goalsQuery = useMemoFirebase(
     () =>
@@ -57,17 +50,15 @@ export default function DashboardPage() {
     useCollection<FinancialGoal>(goalsQuery);
 
   const dashboardData = useMemo(() => {
-    if (!transactions) {
-      return { totalIncome: 0, totalExpenses: 0 };
+    if (!monthlySummary) {
+      return { totalIncome: 0, totalExpenses: 0, balance: 0 };
     }
-    const totalIncome = transactions
-      .filter((t) => t.type === 'income')
-      .reduce((acc, t) => acc + t.amount, 0);
-    const totalExpenses = transactions
-      .filter((t) => t.type === 'expense')
-      .reduce((acc, t) => acc + t.amount, 0);
-    return { totalIncome, totalExpenses };
-  }, [transactions]);
+    return {
+      totalIncome: monthlySummary.totalIncome,
+      totalExpenses: monthlySummary.totalExpense,
+      balance: monthlySummary.netBalance,
+    };
+  }, [monthlySummary]);
 
   const goalsData = useMemo(() => {
     if (!goals || goals.length === 0) {
@@ -87,10 +78,9 @@ export default function DashboardPage() {
     return { totalSaved, firstGoal: goals[0], overallProgress };
   }, [goals]);
 
-  const { totalIncome, totalExpenses } = dashboardData;
-  const balance = totalIncome - totalExpenses;
+  const { totalIncome, totalExpenses, balance } = dashboardData;
 
-  const isLoading = transactionsLoading || goalsLoading;
+  const isLoading = summaryLoading || goalsLoading;
 
   if (isLoading) {
     return (
@@ -106,7 +96,7 @@ export default function DashboardPage() {
     <div className="flex flex-col gap-6 p-4 md:p-6">
       <DashboardHeader />
 
-      <BalanceCard value={balance} change={23.91} />
+      <BalanceCard value={balance} />
 
       <div className="grid grid-cols-2 gap-4">
         <Card className="flex cursor-pointer items-center gap-3 p-4 transition-shadow hover:shadow-md">

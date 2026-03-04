@@ -42,8 +42,14 @@ import {
   setDocumentNonBlocking,
   useMemoFirebase,
 } from '@/firebase';
-import { collection, doc } from 'firebase/firestore';
-import type { Category } from '@/lib/types';
+import {
+  collection,
+  doc,
+  getDoc,
+  increment,
+  updateDoc,
+} from 'firebase/firestore';
+import type { Category, Transaction } from '@/lib/types';
 
 const transactionFormSchema = z.object({
   type: z.enum(['income', 'expense'], {
@@ -126,7 +132,7 @@ export function TransactionForm() {
     const docRef = doc(collectionRef);
     const docId = docRef.id;
 
-    const transactionData = {
+    const transactionData: Omit<Transaction, 'category'> = {
       ...data,
       id: docId,
       userId: user.uid,
@@ -137,6 +143,51 @@ export function TransactionForm() {
     };
 
     setDocumentNonBlocking(docRef, transactionData, {});
+
+    try {
+      const summaryId = format(data.date, 'yyyy-MM');
+      const summaryRef = doc(
+        firestore,
+        'users',
+        user.uid,
+        'monthlySummaries',
+        summaryId
+      );
+
+      const summarySnap = await getDoc(summaryRef);
+
+      const fieldToUpdate =
+        data.type === 'income' ? 'totalIncome' : 'totalExpense';
+      const amount = data.amount;
+      const netIncrement = data.type === 'income' ? amount : -amount;
+
+      if (!summarySnap.exists()) {
+        const month = parseInt(format(data.date, 'M'));
+        const year = parseInt(format(data.date, 'yyyy'));
+        const now = new Date().toISOString();
+        const newSummary = {
+          id: summaryId,
+          userId: user.uid,
+          month,
+          year,
+          totalIncome: data.type === 'income' ? amount : 0,
+          totalExpense: data.type === 'expense' ? amount : 0,
+          netBalance: netIncrement,
+          spendingByCategory: [],
+          createdAt: now,
+          updatedAt: now,
+        };
+        setDocumentNonBlocking(summaryRef, newSummary, {});
+      } else {
+        updateDoc(summaryRef, {
+          [fieldToUpdate]: increment(amount),
+          netBalance: increment(netIncrement),
+          updatedAt: new Date().toISOString(),
+        });
+      }
+    } catch (error) {
+      console.error('Failed to update monthly summary:', error);
+    }
 
     toast({
       title: 'Transação salva!',

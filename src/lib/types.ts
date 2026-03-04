@@ -8,6 +8,7 @@ export type Transaction = {
   category?: Category;
   date: string;
   paymentMethod: string;
+  notes?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -32,6 +33,19 @@ export type FinancialGoal = {
   startDate: string;
   targetDate?: string;
   description?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type MonthlySummary = {
+  id: string;
+  userId: string;
+  month: number;
+  year: number;
+  totalIncome: number;
+  totalExpense: number;
+  netBalance: number;
+  spendingByCategory: any[];
   createdAt: string;
   updatedAt: string;
 };

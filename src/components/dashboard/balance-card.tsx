@@ -4,7 +4,7 @@ import { ArrowUp, Plus } from 'lucide-react';
 
 type BalanceCardProps = {
   value: number;
-  change: number;
+  change?: number;
 };
 
 export function BalanceCard({ value, change }: BalanceCardProps) {
@@ -25,7 +25,7 @@ export function BalanceCard({ value, change }: BalanceCardProps) {
         <p className="font-headline text-4xl font-bold">
           {formatCurrency(value)}
         </p>
-        {change > 0 && (
+        {change != null && change > 0 && (
           <div className="mt-1 flex items-center gap-1 text-sm font-medium text-green-300">
             <ArrowUp className="size-4" />
             <span>{formatCurrency(change)} na última semana</span>
