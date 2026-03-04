@@ -32,7 +32,7 @@ export function AppSidebar() {
   const pathname = usePathname();
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="icon" variant="floating">
       <SidebarHeader className="group-data-[collapsible=icon]:justify-center">
         <div className="flex items-center gap-2 group-data-[collapsible=icon]:hidden">
           <PiggyBank className="size-6 text-primary" />
@@ -61,7 +61,7 @@ export function AppSidebar() {
                   asChild
                   isActive={pathname === item.href}
                   tooltip={item.label}
-                  className="justify-start"
+                  className="justify-start group-data-[collapsible=icon]:justify-center"
                 >
                   <Link href={item.href}>
                     <item.icon />
@@ -77,7 +77,7 @@ export function AppSidebar() {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton tooltip="Configurações" className="justify-start">
+            <SidebarMenuButton tooltip="Configurações" className="justify-start group-data-[collapsible=icon]:justify-center">
               <Settings />
               <span className="group-data-[collapsible=icon]:hidden">
                 Configurações
