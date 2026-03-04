@@ -8,14 +8,24 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Search, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import {
   useUser,
   useFirestore,
   useCollection,
   useMemoFirebase,
 } from '@/firebase';
-import { collection } from 'firebase/firestore';
-import { useMemo } from 'react';
+import {
+  collection,
+  query,
+  orderBy,
+  limit,
+  onSnapshot,
+  getDocs,
+  startAfter,
+  type QueryDocumentSnapshot,
+} from 'firebase/firestore';
+import { useMemo, useState, useEffect } from 'react';
 
 function groupTransactionsByDay(transactions: Transaction[]) {
   return transactions.reduce(
@@ -31,17 +41,17 @@ function groupTransactionsByDay(transactions: Transaction[]) {
   );
 }
 
+const TRANSACTIONS_PER_PAGE = 20;
+
 export default function TransactionsPage() {
   const firestore = useFirestore();
   const { user } = useUser();
 
-  const transactionsQuery = useMemoFirebase(
-    () =>
-      user ? collection(firestore, 'users', user.uid, 'transactions') : null,
-    [firestore, user]
-  );
-  const { data: transactions, isLoading: transactionsLoading } =
-    useCollection<Transaction>(transactionsQuery);
+  const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
+  const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [moreLoading, setMoreLoading] = useState(false);
 
   const categoriesQuery = useMemoFirebase(
     () => (user ? collection(firestore, 'users', user.uid, 'categories') : null),
@@ -50,21 +60,78 @@ export default function TransactionsPage() {
   const { data: categories, isLoading: categoriesLoading } =
     useCollection<Category>(categoriesQuery);
 
+  useEffect(() => {
+    if (!user || !firestore) return;
+
+    setInitialLoading(true);
+    const transactionsRef = collection(
+      firestore,
+      'users',
+      user.uid,
+      'transactions'
+    );
+    const q = query(
+      transactionsRef,
+      orderBy('date', 'desc'),
+      limit(TRANSACTIONS_PER_PAGE)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const newTransactions: Transaction[] = [];
+      snapshot.forEach((doc) => {
+        newTransactions.push({ id: doc.id, ...doc.data() } as Transaction);
+      });
+      setAllTransactions(newTransactions);
+      setLastDoc(snapshot.docs[snapshot.docs.length - 1] || null);
+      setHasMore(snapshot.docs.length === TRANSACTIONS_PER_PAGE);
+      setInitialLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [user, firestore]);
+
+  const handleLoadMore = async () => {
+    if (!user || !firestore || !lastDoc || moreLoading) return;
+
+    setMoreLoading(true);
+    const transactionsRef = collection(
+      firestore,
+      'users',
+      user.uid,
+      'transactions'
+    );
+    const q = query(
+      transactionsRef,
+      orderBy('date', 'desc'),
+      startAfter(lastDoc),
+      limit(TRANSACTIONS_PER_PAGE)
+    );
+
+    const documentSnapshots = await getDocs(q);
+    const newTransactions: Transaction[] = [];
+    documentSnapshots.forEach((doc) => {
+      newTransactions.push({ id: doc.id, ...doc.data() } as Transaction);
+    });
+
+    setAllTransactions((prev) => [...prev, ...newTransactions]);
+    setLastDoc(
+      documentSnapshots.docs[documentSnapshots.docs.length - 1] || null
+    );
+    setHasMore(documentSnapshots.docs.length === TRANSACTIONS_PER_PAGE);
+    setMoreLoading(false);
+  };
+
   const enrichedTransactions = useMemo(() => {
-    if (!transactions || !categories) return [];
-    return transactions.map((t) => ({
+    if (!allTransactions || !categories) return [];
+    return allTransactions.map((t) => ({
       ...t,
       category: categories.find((c) => c.id === t.categoryId),
     }));
-  }, [transactions, categories]);
+  }, [allTransactions, categories]);
 
-  const groupedTransactions = groupTransactionsByDay(
-    enrichedTransactions.sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-    )
-  );
+  const groupedTransactions = groupTransactionsByDay(enrichedTransactions);
 
-  const isLoading = transactionsLoading || categoriesLoading;
+  const isLoading = initialLoading || categoriesLoading;
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
@@ -91,7 +158,8 @@ export default function TransactionsPage() {
                 <div className="flex flex-col gap-2">
                   {transactions.map((transaction) => {
                     const Icon =
-                      transaction.category && iconMap[transaction.category.icon];
+                      transaction.category &&
+                      iconMap[transaction.category.icon];
                     const color = transaction.category?.color || '#888';
                     return (
                       <div
@@ -134,6 +202,14 @@ export default function TransactionsPage() {
               </div>
             );
           })}
+          {hasMore && (
+            <Button onClick={handleLoadMore} disabled={moreLoading}>
+              {moreLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
+              Carregar Mais
+            </Button>
+          )}
         </div>
       )}
     </div>

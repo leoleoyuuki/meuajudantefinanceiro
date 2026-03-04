@@ -2,7 +2,7 @@
 
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
 import { SummaryCard } from '@/components/dashboard/summary-card';
-import { ArrowDown, ArrowUp, PiggyBank, Scale, Loader2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, PiggyBank, Loader2 } from 'lucide-react';
 import { CategorySpendingChart } from '@/components/dashboard/category-spending-chart';
 import { TopExpenses } from '@/components/dashboard/top-expenses';
 import {
@@ -11,19 +11,29 @@ import {
   useCollection,
   useMemoFirebase,
 } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { collection, query, where, orderBy } from 'firebase/firestore';
 import type { Transaction, Category } from '@/lib/types';
 import { useMemo } from 'react';
+import { startOfMonth, endOfMonth } from 'date-fns';
 
 export default function DashboardPage() {
   const firestore = useFirestore();
   const { user } = useUser();
 
-  const transactionsQuery = useMemoFirebase(
-    () =>
-      user ? collection(firestore, 'users', user.uid, 'transactions') : null,
-    [firestore, user]
-  );
+  const transactionsQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    const now = new Date();
+    const startDate = startOfMonth(now);
+    const endDate = endOfMonth(now);
+
+    return query(
+      collection(firestore, 'users', user.uid, 'transactions'),
+      orderBy('date', 'desc'),
+      where('date', '>=', startDate.toISOString()),
+      where('date', '<=', endDate.toISOString())
+    );
+  }, [firestore, user]);
+
   const { data: transactions, isLoading: transactionsLoading } =
     useCollection<Transaction>(transactionsQuery);
 
@@ -39,34 +49,20 @@ export default function DashboardPage() {
       return {
         totalIncome: 0,
         totalExpenses: 0,
-        currentBalance: 0,
         spendingByCategory: [],
         topExpenses: [],
       };
     }
 
-    const now = new Date();
-    const currentMonthTransactions = transactions.filter((t) => {
-      const transactionDate = new Date(t.date);
-      return (
-        transactionDate.getMonth() === now.getMonth() &&
-        transactionDate.getFullYear() === now.getFullYear()
-      );
-    });
-
-    const totalIncome = currentMonthTransactions
+    const totalIncome = transactions
       .filter((t) => t.type === 'income')
       .reduce((acc, t) => acc + t.amount, 0);
 
-    const totalExpenses = currentMonthTransactions
+    const totalExpenses = transactions
       .filter((t) => t.type === 'expense')
       .reduce((acc, t) => acc + t.amount, 0);
 
-    const currentBalance = transactions.reduce((acc, t) => {
-      return t.type === 'income' ? acc + t.amount : acc - t.amount;
-    }, 0);
-
-    const spendingByCategory = currentMonthTransactions
+    const spendingByCategory = transactions
       .filter((t) => t.type === 'expense')
       .reduce(
         (acc, t) => {
@@ -88,7 +84,7 @@ export default function DashboardPage() {
         [] as { category: string; amount: number; fill: string }[]
       );
 
-    const topExpenses = currentMonthTransactions
+    const topExpenses = transactions
       .filter((t) => t.type === 'expense')
       .sort((a, b) => b.amount - a.amount)
       .slice(0, 3)
@@ -100,14 +96,12 @@ export default function DashboardPage() {
     return {
       totalIncome,
       totalExpenses,
-      currentBalance,
       spendingByCategory,
       topExpenses,
     };
   }, [transactions, categories]);
 
   const {
-    currentBalance,
     totalIncome,
     totalExpenses,
     spendingByCategory,
@@ -129,13 +123,7 @@ export default function DashboardPage() {
     <div className="flex flex-col gap-6 p-4 md:p-6">
       <DashboardHeader />
 
-      <div className="grid grid-cols-2 gap-4">
-        <SummaryCard
-          title="Saldo Atual"
-          value={currentBalance}
-          icon={Scale}
-          iconClass="bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400"
-        />
+      <div className="grid grid-cols-1 gap-4">
         <SummaryCard
           title="Economia do Mês"
           value={savings}
