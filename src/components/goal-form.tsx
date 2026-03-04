@@ -70,15 +70,16 @@ export function GoalForm() {
     const now = new Date();
 
     const goalData = {
-      ...data,
+      name: data.name,
+      targetAmount: data.targetAmount,
       id: docId,
       userId: user.uid,
       currentAmount: 0,
       startDate: now.toISOString(),
-      targetDate: data.targetDate ? data.targetDate.toISOString() : undefined,
       createdAt: now.toISOString(),
       updatedAt: now.toISOString(),
-      description: data.description || undefined,
+      ...(data.description && { description: data.description }),
+      ...(data.targetDate && { targetDate: data.targetDate.toISOString() }),
     };
 
     setDocumentNonBlocking(docRef, goalData, {});
