@@ -27,7 +27,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useUser, useFirestore, setDocumentNonBlocking } from '@/firebase';
-import { collection, doc } from 'firebase/firestore';
+import {
+  collection,
+  doc,
+  getDoc,
+  increment,
+  setDoc,
+  updateDoc,
+} from 'firebase/firestore';
 
 const goalFormSchema = z.object({
   name: z.string().min(2, {
@@ -70,10 +77,10 @@ export function GoalForm() {
     const now = new Date();
 
     const goalData = {
-      name: data.name,
-      targetAmount: data.targetAmount,
       id: docId,
       userId: user.uid,
+      name: data.name,
+      targetAmount: data.targetAmount,
       currentAmount: 0,
       startDate: now.toISOString(),
       createdAt: now.toISOString(),
@@ -83,6 +90,37 @@ export function GoalForm() {
     };
 
     setDocumentNonBlocking(docRef, goalData, {});
+
+    try {
+      const summaryRef = doc(
+        firestore,
+        'users',
+        user.uid,
+        'goalsSummaries',
+        'summary'
+      );
+      const summarySnap = await getDoc(summaryRef);
+      const nowStr = now.toISOString();
+
+      if (summarySnap.exists()) {
+        await updateDoc(summaryRef, {
+          totalTargetAmount: increment(data.targetAmount),
+          goalsCount: increment(1),
+          updatedAt: nowStr,
+        });
+      } else {
+        await setDoc(summaryRef, {
+          id: 'summary',
+          userId: user.uid,
+          totalTargetAmount: data.targetAmount,
+          totalCurrentAmount: 0,
+          goalsCount: 1,
+          updatedAt: nowStr,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to update goals summary:', error);
+    }
 
     toast({
       title: 'Meta salva!',

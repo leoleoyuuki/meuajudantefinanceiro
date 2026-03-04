@@ -18,7 +18,7 @@ import {
   useMemoFirebase,
   updateDocumentNonBlocking,
 } from '@/firebase';
-import { collection, doc } from 'firebase/firestore';
+import { collection, doc, updateDoc, increment } from 'firebase/firestore';
 import type { FinancialGoal } from '@/lib/types';
 import { Loader2, PlusCircle, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -51,7 +51,7 @@ export default function GoalsPage() {
   );
   const { data: goals, isLoading } = useCollection<FinancialGoal>(goalsQuery);
 
-  const handleAddAmount = () => {
+  const handleAddAmount = async () => {
     if (!selectedGoal || !firestore || !user) return;
     const numericAmount = parseFloat(amountToAdd);
     if (isNaN(numericAmount) || numericAmount <= 0) {
@@ -81,11 +81,28 @@ export default function GoalsPage() {
       'financialGoals',
       selectedGoal.id
     );
+    const now = new Date().toISOString();
 
     updateDocumentNonBlocking(goalRef, {
       currentAmount: newCurrentAmount,
-      updatedAt: new Date().toISOString(),
+      updatedAt: now,
     });
+
+    try {
+      const summaryRef = doc(
+        firestore,
+        'users',
+        user.uid,
+        'goalsSummaries',
+        'summary'
+      );
+      await updateDoc(summaryRef, {
+        totalCurrentAmount: increment(numericAmount),
+        updatedAt: now,
+      });
+    } catch (error) {
+      console.error('Failed to update goals summary:', error);
+    }
 
     toast({
       title: 'Valor adicionado!',

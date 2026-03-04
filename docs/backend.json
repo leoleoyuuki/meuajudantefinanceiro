@@ -355,6 +355,47 @@
         "updatedAt"
       ]
     },
+    "GoalsSummary": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "GoalsSummary",
+      "type": "object",
+      "description": "Aggregated summary data for all financial goals for a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the GoalsSummary entity (e.g., 'summary')."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User for whom this summary was generated."
+        },
+        "totalTargetAmount": {
+          "type": "number",
+          "description": "The sum of target amounts for all financial goals."
+        },
+        "totalCurrentAmount": {
+          "type": "number",
+          "description": "The sum of current amounts saved across all financial goals."
+        },
+        "goalsCount": {
+          "type": "number",
+          "description": "The total number of financial goals."
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the goals summary was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "totalTargetAmount",
+        "totalCurrentAmount",
+        "goalsCount",
+        "updatedAt"
+      ]
+    },
     "MonthlySummary": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "MonthlySummary",
@@ -524,6 +565,26 @@
             {
               "name": "financialGoalId",
               "description": "The unique identifier for the FinancialGoal document."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/goalsSummaries/{summaryId}",
+        "definition": {
+          "entityName": "GoalsSummary",
+          "schema": {
+            "$ref": "#/backend/entities/GoalsSummary"
+          },
+          "description": "Stores aggregated financial summary data for all of a user's goals. The 'userId' is embedded in the path for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the User for whom this summary was generated."
+            },
+            {
+              "name": "summaryId",
+              "description": "The unique identifier for the GoalsSummary document (e.g., 'summary')."
             }
           ]
         }

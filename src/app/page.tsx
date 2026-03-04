@@ -21,8 +21,12 @@ import {
   useMemoFirebase,
   useDoc,
 } from '@/firebase';
-import { collection, doc } from 'firebase/firestore';
-import type { FinancialGoal, MonthlySummary } from '@/lib/types';
+import { collection, doc, query, limit } from 'firebase/firestore';
+import type {
+  FinancialGoal,
+  MonthlySummary,
+  GoalsSummary,
+} from '@/lib/types';
 import { useMemo } from 'react';
 import { format } from 'date-fns';
 import { formatCurrency } from '@/lib/utils';
@@ -41,13 +45,28 @@ export default function DashboardPage() {
   const { data: monthlySummary, isLoading: summaryLoading } =
     useDoc<MonthlySummary>(summaryDocQuery);
 
-  const goalsQuery = useMemoFirebase(
+  const goalsSummaryQuery = useMemoFirebase(
     () =>
-      user ? collection(firestore, 'users', user.uid, 'financialGoals') : null,
+      user
+        ? doc(firestore, 'users', user.uid, 'goalsSummaries', 'summary')
+        : null,
     [firestore, user]
   );
-  const { data: goals, isLoading: goalsLoading } =
-    useCollection<FinancialGoal>(goalsQuery);
+  const { data: goalsSummary, isLoading: goalsSummaryLoading } =
+    useDoc<GoalsSummary>(goalsSummaryQuery);
+
+  const firstGoalQuery = useMemoFirebase(
+    () =>
+      user
+        ? query(
+            collection(firestore, 'users', user.uid, 'financialGoals'),
+            limit(1)
+          )
+        : null,
+    [firestore, user]
+  );
+  const { data: firstGoalArr, isLoading: firstGoalLoading } =
+    useCollection<FinancialGoal>(firstGoalQuery);
 
   const dashboardData = useMemo(() => {
     if (!monthlySummary) {
@@ -61,26 +80,27 @@ export default function DashboardPage() {
   }, [monthlySummary]);
 
   const goalsData = useMemo(() => {
-    if (!goals || goals.length === 0) {
-      return { totalSaved: 0, firstGoal: null, overallProgress: 0 };
+    if (!goalsSummary || goalsSummary.goalsCount === 0) {
+      return {
+        totalSaved: 0,
+        firstGoal: null,
+        overallProgress: 0,
+        hasGoals: false,
+      };
     }
-    const totalSaved = goals.reduce(
-      (acc, goal) => acc + goal.currentAmount,
-      0
-    );
-    const totalTarget = goals.reduce(
-      (acc, goal) => acc + goal.targetAmount,
-      0
-    );
+
+    const totalSaved = goalsSummary.totalCurrentAmount;
+    const totalTarget = goalsSummary.totalTargetAmount;
     const overallProgress =
       totalTarget > 0 ? (totalSaved / totalTarget) * 100 : 0;
+    const firstGoal = firstGoalArr?.[0] || null;
 
-    return { totalSaved, firstGoal: goals[0], overallProgress };
-  }, [goals]);
+    return { totalSaved, firstGoal, overallProgress, hasGoals: true };
+  }, [goalsSummary, firstGoalArr]);
 
   const { totalIncome, totalExpenses, balance } = dashboardData;
 
-  const isLoading = summaryLoading || goalsLoading;
+  const isLoading = summaryLoading || goalsSummaryLoading || firstGoalLoading;
 
   if (isLoading) {
     return (
@@ -90,7 +110,7 @@ export default function DashboardPage() {
     );
   }
 
-  const showGoalsProgress = goals && goals.length > 0;
+  const showGoalsProgress = goalsData.hasGoals;
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
@@ -141,7 +161,7 @@ export default function DashboardPage() {
         <GoalsProgressCard progressPercentage={goalsData.overallProgress} />
       )}
 
-      {goals && goals.length > 0 && (
+      {goalsData.hasGoals && (
         <Card className="p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">

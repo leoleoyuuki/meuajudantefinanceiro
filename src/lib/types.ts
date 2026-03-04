@@ -37,6 +37,15 @@ export type FinancialGoal = {
   updatedAt: string;
 };
 
+export type GoalsSummary = {
+  id: string;
+  userId: string;
+  totalTargetAmount: number;
+  totalCurrentAmount: number;
+  goalsCount: number;
+  updatedAt: string;
+};
+
 export type MonthlySummary = {
   id: string;
   userId: string;
