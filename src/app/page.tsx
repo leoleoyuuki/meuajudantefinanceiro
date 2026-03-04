@@ -34,6 +34,7 @@ import Link from 'next/link';
 import { StatCard } from '@/components/dashboard/stat-card';
 import { RecentTransactions } from '@/components/dashboard/recent-transactions';
 import { AICategorizationCard } from '@/components/dashboard/ai-categorization-card';
+import { MonthlyBalanceChart } from '@/components/dashboard/monthly-balance-chart';
 
 export default function DashboardPage() {
   const firestore = useFirestore();
@@ -44,7 +45,7 @@ export default function DashboardPage() {
     return query(
       collection(firestore, 'users', user.uid, 'monthlySummaries'),
       orderBy('id', 'desc'),
-      limit(1)
+      limit(4)
     );
   }, [firestore, user]);
   const { data: monthlySummaries, isLoading: summariesLoading } =
@@ -158,22 +159,26 @@ export default function DashboardPage() {
               <StatCard
                 title="Balanço"
                 value={formatCurrency(dashboardData.balance)}
+                className="text-primary"
               />
               <StatCard
                 title="Receitas"
                 value={formatCurrency(dashboardData.totalIncome)}
+                className="text-green-600"
               />
               <StatCard
                 title="Despesas"
                 value={formatCurrency(dashboardData.totalExpenses)}
+                className="text-destructive"
               />
             </CardContent>
           </Card>
+          <MonthlyBalanceChart data={monthlySummaries || []} />
           <RecentTransactions transactions={enrichedTransactions} />
         </div>
 
         <div className="flex flex-col gap-6 lg:col-span-1">
-          <Button asChild size="sm" className="w-full">
+          <Button asChild size="sm" className="hidden w-full lg:flex">
             <Link href="/add-transaction">
               <PlusCircle className="mr-2 h-4 w-4" />
               Novo Lançamento

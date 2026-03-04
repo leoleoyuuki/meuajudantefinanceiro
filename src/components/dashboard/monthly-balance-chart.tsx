@@ -34,7 +34,7 @@ type MonthlyBalanceChartProps = {
 const chartConfig = {
   totalIncome: {
     label: 'Receitas',
-    color: 'hsl(var(--chart-2))',
+    color: 'hsl(var(--chart-1))',
   },
   totalExpense: {
     label: 'Despesas',
