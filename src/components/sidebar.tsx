@@ -72,7 +72,7 @@ export function AppSidebar() {
                   : <User className="size-4" />}
               </AvatarFallback>
             </Avatar>
-            <p className="max-w-[120px] truncate font-semibold text-foreground">
+            <p className="truncate text-sm font-semibold text-foreground">
               {user?.displayName || 'Usuário'}
             </p>
           </div>
