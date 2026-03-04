@@ -227,6 +227,7 @@ export function TransactionForm() {
                     type="number"
                     placeholder="0,00"
                     {...field}
+                    value={field.value ?? ''}
                     className="pl-10 text-lg"
                   />
                 </div>
@@ -246,6 +247,7 @@ export function TransactionForm() {
                 <Input
                   placeholder="Ex: iFood, Uber, Salário"
                   {...field}
+                  value={field.value ?? ''}
                   onBlur={handleDescriptionBlur}
                 />
               </FormControl>
@@ -263,7 +265,7 @@ export function TransactionForm() {
               <div className="relative">
                 <Select
                   onValueChange={field.onChange}
-                  value={field.value}
+                  value={field.value ?? ''}
                   disabled={categoriesLoading}
                 >
                   <FormControl>
@@ -338,7 +340,7 @@ export function TransactionForm() {
                 <FormLabel>Pagamento</FormLabel>
                 <Select
                   onValueChange={field.onChange}
-                  defaultValue={field.value}
+                  value={field.value ?? ''}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -370,6 +372,7 @@ export function TransactionForm() {
                   placeholder="Alguma anotação sobre a transação?"
                   className="resize-none"
                   {...field}
+                  value={field.value ?? ''}
                 />
               </FormControl>
               <FormMessage />
