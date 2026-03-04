@@ -3,6 +3,7 @@
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
 import { BalanceCard } from '@/components/dashboard/balance-card';
 import { GoalsProgressCard } from '@/components/dashboard/setup-progress-card';
+import { MonthlyBalanceChart } from '@/components/dashboard/monthly-balance-chart';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -24,7 +25,7 @@ import {
   useMemoFirebase,
   useDoc,
 } from '@/firebase';
-import { collection, doc, query, limit } from 'firebase/firestore';
+import { collection, doc, query, limit, orderBy } from 'firebase/firestore';
 import type {
   FinancialGoal,
   MonthlySummary,
@@ -39,14 +40,16 @@ export default function DashboardPage() {
   const firestore = useFirestore();
   const { user } = useUser();
 
-  const summaryDocQuery = useMemoFirebase(() => {
+  const monthlySummariesQuery = useMemoFirebase(() => {
     if (!user) return null;
-    const summaryId = format(new Date(), 'yyyy-MM');
-    return doc(firestore, 'users', user.uid, 'monthlySummaries', summaryId);
+    return query(
+      collection(firestore, 'users', user.uid, 'monthlySummaries'),
+      orderBy('id', 'desc'),
+      limit(6)
+    );
   }, [firestore, user]);
-
-  const { data: monthlySummary, isLoading: summaryLoading } =
-    useDoc<MonthlySummary>(summaryDocQuery);
+  const { data: monthlySummaries, isLoading: summariesLoading } =
+    useCollection<MonthlySummary>(monthlySummariesQuery);
 
   const goalsSummaryQuery = useMemoFirebase(
     () =>
@@ -72,15 +75,19 @@ export default function DashboardPage() {
     useCollection<FinancialGoal>(firstGoalQuery);
 
   const dashboardData = useMemo(() => {
-    if (!monthlySummary) {
+    const currentMonthSummary = monthlySummaries?.[0];
+    if (
+      !currentMonthSummary ||
+      currentMonthSummary.id !== format(new Date(), 'yyyy-MM')
+    ) {
       return { totalIncome: 0, totalExpenses: 0, balance: 0 };
     }
     return {
-      totalIncome: monthlySummary.totalIncome,
-      totalExpenses: monthlySummary.totalExpense,
-      balance: monthlySummary.netBalance,
+      totalIncome: currentMonthSummary.totalIncome,
+      totalExpenses: currentMonthSummary.totalExpense,
+      balance: currentMonthSummary.netBalance,
     };
-  }, [monthlySummary]);
+  }, [monthlySummaries]);
 
   const goalsData = useMemo(() => {
     if (!goalsSummary || goalsSummary.goalsCount === 0) {
@@ -88,7 +95,6 @@ export default function DashboardPage() {
         totalSaved: 0,
         firstGoal: null,
         overallProgress: 0,
-        hasGoals: false,
       };
     }
 
@@ -98,12 +104,12 @@ export default function DashboardPage() {
       totalTarget > 0 ? (totalSaved / totalTarget) * 100 : 0;
     const firstGoal = firstGoalArr?.[0] || null;
 
-    return { totalSaved, firstGoal, overallProgress, hasGoals: true };
+    return { totalSaved, firstGoal, overallProgress };
   }, [goalsSummary, firstGoalArr]);
 
   const { totalIncome, totalExpenses, balance } = dashboardData;
 
-  const isLoading = summaryLoading || goalsSummaryLoading || firstGoalLoading;
+  const isLoading = summariesLoading || goalsSummaryLoading || firstGoalLoading;
 
   if (isLoading) {
     return (
@@ -158,9 +164,11 @@ export default function DashboardPage() {
         </Card>
       </div>
 
+      <MonthlyBalanceChart data={monthlySummaries || []} />
+
       <GoalsProgressCard progressPercentage={goalsData.overallProgress} />
 
-      {goalsData.hasGoals ? (
+      {goalsSummary && goalsSummary.goalsCount > 0 ? (
         <Card className="p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
