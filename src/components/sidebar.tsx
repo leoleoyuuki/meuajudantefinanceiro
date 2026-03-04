@@ -19,7 +19,6 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Button } from './ui/button';
 
 const navItems = [
   { href: '/', icon: Home, label: 'Início' },
@@ -32,7 +31,7 @@ export function AppSidebar() {
   const pathname = usePathname();
 
   return (
-    <Sidebar collapsible="icon" variant="floating">
+    <Sidebar collapsible="icon">
       <SidebarHeader className="group-data-[collapsible=icon]:justify-center">
         <div className="flex items-center gap-2 group-data-[collapsible=icon]:hidden">
           <PiggyBank className="size-6 text-primary" />
@@ -42,9 +41,10 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <div className="p-2">
-          <Button
+          <SidebarMenuButton
             asChild
-            className="w-full justify-start group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-2"
+            tooltip="Nova Transação"
+            className="w-full justify-start bg-primary text-primary-foreground hover:bg-primary/90 group-data-[collapsible=icon]:justify-center"
           >
             <Link href="/add-transaction">
               <Plus />
@@ -52,7 +52,7 @@ export function AppSidebar() {
                 Nova Transação
               </span>
             </Link>
-          </Button>
+          </SidebarMenuButton>
         </div>
         <SidebarMenu>
           {navItems.map((item) => (
