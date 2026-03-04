@@ -53,13 +53,24 @@ export function AppSidebar() {
     }
   };
 
+  const formatDisplayName = (name: string | null | undefined): string => {
+    if (!name) return 'Usuário';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length > 1) {
+      return `${parts[0]} ${parts[parts.length - 1]}`;
+    }
+    return parts[0] || 'Usuário';
+  };
+  
+  const displayName = formatDisplayName(user?.displayName);
+
   return (
     <Sidebar collapsible="icon">
       <SidebarRail />
-      <SidebarHeader className="p-4 group-data-[collapsible=icon]:hidden">
+      <SidebarHeader className="p-2 group-data-[collapsible=icon]:hidden">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Avatar className="size-9">
+          <div className="flex items-center gap-2">
+            <Avatar className="size-8">
               <AvatarFallback className="bg-secondary text-sm font-semibold">
                 {user?.displayName
                   ? user.displayName.length > 1
@@ -72,19 +83,19 @@ export function AppSidebar() {
                   : <User className="size-4" />}
               </AvatarFallback>
             </Avatar>
-            <p className="truncate text-sm font-semibold text-foreground">
-              {user?.displayName || 'Usuário'}
+            <p className="truncate text-sm font-normal text-foreground">
+              {displayName}
             </p>
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="size-7">
-                <MoreHorizontal className="size-5" />
+              <Button variant="ghost" size="icon" className="size-6">
+                <MoreHorizontal className="size-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" side="bottom">
               <DropdownMenuLabel>
-                <p className="font-semibold">{user?.displayName || 'Usuário'}</p>
+                <p className="font-normal">{displayName}</p>
                 <p className="text-xs font-normal text-muted-foreground">
                   {user?.email || 'Login com Google'}
                 </p>
@@ -106,7 +117,7 @@ export function AppSidebar() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-              <Avatar className="size-9">
+              <Avatar className="size-8">
                 <AvatarFallback className="bg-secondary text-sm font-semibold">
                     {user?.displayName
                     ? user.displayName.length > 1
@@ -119,7 +130,7 @@ export function AppSidebar() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" side="right">
             <DropdownMenuLabel>
-              <p className="font-semibold">{user?.displayName || 'Usuário'}</p>
+              <p className="font-normal">{displayName}</p>
               <p className="text-xs font-normal text-muted-foreground">
                 {user?.email || 'Login com Google'}
               </p>
@@ -136,7 +147,7 @@ export function AppSidebar() {
         </DropdownMenu>
       </SidebarHeader>
 
-      <SidebarContent className="p-4 flex-grow">
+      <SidebarContent className="p-2 flex-grow">
         <SidebarMenu>
           {navItems.map((item) => (
             <SidebarMenuItem key={item.href}>
@@ -144,10 +155,10 @@ export function AppSidebar() {
                 asChild
                 isActive={pathname === item.href}
                 tooltip={item.label}
-                className="h-11 justify-start gap-3 px-3 group-data-[collapsible=icon]:justify-center"
+                className="h-9 justify-start gap-2 px-2 group-data-[collapsible=icon]:justify-center"
               >
                 <Link href={item.href}>
-                  <item.icon className="size-5 shrink-0" />
+                  <item.icon className="size-4 shrink-0" />
                   <span className="group-data-[collapsible=icon]:hidden">
                     {item.label}
                   </span>
@@ -158,14 +169,14 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarContent>
 
-      <SidebarFooter className="p-4">
+      <SidebarFooter className="p-2">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
               tooltip="Configurações"
-              className="h-11 justify-start gap-3 px-3 group-data-[collapsible=icon]:justify-center"
+              className="h-9 justify-start gap-2 px-2 group-data-[collapsible=icon]:justify-center"
             >
-              <Settings className="size-5 shrink-0" />
+              <Settings className="size-4 shrink-0" />
               <span className="group-data-[collapsible=icon]:hidden">
                 Configurações
               </span>
