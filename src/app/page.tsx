@@ -158,19 +158,22 @@ export default function DashboardPage() {
         <div className="flex flex-col gap-6 lg:col-span-2">
           <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
             <StatCard
-              title="Saldo Total"
+              title="Balanço"
               value={formatCurrency(dashboardData.balance)}
               icon={Wallet}
+              variant="balance"
             />
             <StatCard
-              title="Receitas do Mês"
+              title="Receitas"
               value={formatCurrency(dashboardData.totalIncome)}
               icon={TrendingUp}
+              variant="income"
             />
             <StatCard
-              title="Despesas do Mês"
+              title="Despesas"
               value={formatCurrency(dashboardData.totalExpenses)}
               icon={TrendingDown}
+              variant="expense"
             />
           </div>
           <RecentTransactions transactions={enrichedTransactions} />
