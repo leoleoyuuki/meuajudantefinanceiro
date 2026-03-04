@@ -57,17 +57,17 @@ export function AppSidebar() {
           <DropdownMenuTrigger asChild>
             <button className="flex w-full items-center justify-center gap-2 rounded-md p-1 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
               <Avatar className="size-8">
-                {user?.photoURL ? (
-                  <AvatarImage src={user.photoURL} alt="User Avatar" />
-                ) : (
-                  <AvatarFallback className="bg-secondary text-xs font-semibold">
-                    {user?.displayName ? (
-                      user.displayName.substring(0, 2).toUpperCase()
-                    ) : (
-                      <User className="size-4 text-muted-foreground" />
-                    )}
-                  </AvatarFallback>
-                )}
+                <AvatarFallback className="bg-secondary text-xs font-semibold">
+                  {user?.displayName
+                    ? user.displayName.length > 1
+                      ? `${user.displayName
+                          .charAt(0)
+                          .toUpperCase()}${user.displayName
+                          .charAt(1)
+                          .toLowerCase()}`
+                      : user.displayName.toUpperCase()
+                    : <User className="size-4 text-muted-foreground" />}
+                </AvatarFallback>
               </Avatar>
               <div className="group-data-[collapsible=icon]:hidden">
                 <p className="max-w-[120px] truncate text-sm font-semibold">
