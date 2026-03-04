@@ -55,7 +55,7 @@ export function CategorySpendingChart({ data }: CategorySpendingChartProps) {
       <CardContent className="flex justify-center">
         <ChartContainer
           config={chartConfig}
-          className="mx-auto aspect-square max-h-[300px]"
+          className="mx-auto aspect-square max-h-[250px]"
         >
           <PieChart>
             <ChartTooltip

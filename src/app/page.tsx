@@ -2,7 +2,7 @@
 
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
 import { SummaryCard } from '@/components/dashboard/summary-card';
-import { ArrowDown, ArrowUp, PiggyBank, Loader2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, Loader2 } from 'lucide-react';
 import { CategorySpendingChart } from '@/components/dashboard/category-spending-chart';
 import { TopExpenses } from '@/components/dashboard/top-expenses';
 import {
@@ -123,25 +123,18 @@ export default function DashboardPage() {
     <div className="flex flex-col gap-6 p-4 md:p-6">
       <DashboardHeader />
 
-      <div className="grid grid-cols-1 gap-4">
-        <SummaryCard
-          title="Economia do Mês"
-          value={savings}
-          icon={PiggyBank}
-          iconClass="bg-green-100 text-green-600 dark:bg-green-900/50 dark:text-green-400"
-        />
-      </div>
+      <SummaryCard title="Balanço do Mês" value={savings} variant="primary" />
 
       <div className="grid grid-cols-2 gap-4">
         <SummaryCard
-          title="Receitas do Mês"
+          title="Receitas"
           value={totalIncome}
           icon={ArrowUp}
           variant="small"
           iconClass="text-primary"
         />
         <SummaryCard
-          title="Despesas do Mês"
+          title="Despesas"
           value={totalExpenses}
           icon={ArrowDown}
           variant="small"
@@ -149,10 +142,8 @@ export default function DashboardPage() {
         />
       </div>
 
-      <div className="flex flex-col gap-6">
-        <CategorySpendingChart data={spendingByCategory} />
-        <TopExpenses data={topExpenses} />
-      </div>
+      <CategorySpendingChart data={spendingByCategory} />
+      <TopExpenses data={topExpenses} />
     </div>
   );
 }

@@ -3,6 +3,8 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import placeholderImages from '@/lib/placeholder-images.json';
 import { useUser } from '@/firebase';
+import { Bell } from 'lucide-react';
+import { Button } from '../ui/button';
 
 export function DashboardHeader() {
   const userImage = placeholderImages.find((p) => p.id === 'user-avatar');
@@ -22,14 +24,20 @@ export function DashboardHeader() {
           {displayName}
         </h1>
       </div>
-      <Avatar className="size-12 border-2 border-primary/20">
-        <AvatarImage
-          src={photoURL || ''}
-          alt="User Avatar"
-          data-ai-hint={userImage?.hint}
-        />
-        <AvatarFallback>{displayName?.charAt(0).toUpperCase()}</AvatarFallback>
-      </Avatar>
+      <div className="flex items-center gap-2">
+        <Button variant="ghost" size="icon" className="rounded-full">
+          <Bell className="size-5" />
+          <span className="sr-only">Notificações</span>
+        </Button>
+        <Avatar className="size-12 border-2 border-primary/20">
+          <AvatarImage
+            src={photoURL || ''}
+            alt="User Avatar"
+            data-ai-hint={userImage?.hint}
+          />
+          <AvatarFallback>{displayName?.charAt(0).toUpperCase()}</AvatarFallback>
+        </Avatar>
+      </div>
     </div>
   );
 }

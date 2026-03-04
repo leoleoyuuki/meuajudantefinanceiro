@@ -15,12 +15,12 @@ export function TopExpenses({ data }: TopExpensesProps) {
       </CardHeader>
       <CardContent>
         {data.length > 0 ? (
-          <div className="flex flex-col gap-4">
+          <ul className="flex flex-col gap-4">
             {data.map((transaction) => {
               const Icon = transaction.category && iconMap[transaction.category.icon];
               const color = transaction.category?.color || '#888';
               return (
-                <div
+                <li
                   key={transaction.id}
                   className="flex items-center justify-between"
                 >
@@ -41,10 +41,10 @@ export function TopExpenses({ data }: TopExpensesProps) {
                   <span className="font-bold text-destructive">
                     {formatCurrency(transaction.amount)}
                   </span>
-                </div>
+                </li>
               );
             })}
-          </div>
+          </ul>
         ) : (
           <p className="text-sm text-muted-foreground">
             Nenhuma despesa registrada este mês.
