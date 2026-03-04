@@ -6,9 +6,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
   Loader2,
-  Wallet,
-  TrendingUp,
-  TrendingDown,
   ChevronRight,
   Target,
   PlusCircle,
@@ -156,26 +153,22 @@ export default function DashboardPage() {
       <DashboardHeader />
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="flex flex-col gap-6 lg:col-span-2">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            <StatCard
-              title="Balanço"
-              value={formatCurrency(dashboardData.balance)}
-              icon={Wallet}
-              variant="balance"
-            />
-            <StatCard
-              title="Receitas"
-              value={formatCurrency(dashboardData.totalIncome)}
-              icon={TrendingUp}
-              variant="income"
-            />
-            <StatCard
-              title="Despesas"
-              value={formatCurrency(dashboardData.totalExpenses)}
-              icon={TrendingDown}
-              variant="expense"
-            />
-          </div>
+          <Card>
+            <CardContent className="flex flex-col divide-y divide-border p-0 md:flex-row md:divide-x md:divide-y-0">
+              <StatCard
+                title="Balanço"
+                value={formatCurrency(dashboardData.balance)}
+              />
+              <StatCard
+                title="Receitas"
+                value={formatCurrency(dashboardData.totalIncome)}
+              />
+              <StatCard
+                title="Despesas"
+                value={formatCurrency(dashboardData.totalExpenses)}
+              />
+            </CardContent>
+          </Card>
           <RecentTransactions transactions={enrichedTransactions} />
         </div>
 
