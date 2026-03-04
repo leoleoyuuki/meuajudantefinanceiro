@@ -33,14 +33,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { suggestCategory } from '@/app/actions';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   useUser,
   useFirestore,
   useCollection,
-  addDocumentNonBlocking,
-  useMemoFirebase,
   setDocumentNonBlocking,
+  useMemoFirebase,
 } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
 import type { Category } from '@/lib/types';
@@ -55,7 +54,9 @@ const transactionFormSchema = z.object({
   amount: z.coerce.number().positive({
     message: 'Valor deve ser positivo.',
   }),
-  categoryId: z.string({ required_error: 'Categoria é obrigatória.' }),
+  categoryId: z
+    .string({ required_error: 'Categoria é obrigatória.' })
+    .min(1, { message: 'Categoria é obrigatória.' }),
   date: z.date({
     required_error: 'Data é obrigatória.',
   }),
@@ -80,7 +81,8 @@ export function TransactionForm() {
   const { user } = useUser();
 
   const categoriesQuery = useMemoFirebase(
-    () => (user ? collection(firestore, 'users', user.uid, 'categories') : null),
+    () =>
+      user ? collection(firestore, 'users', user.uid, 'categories') : null,
     [firestore, user]
   );
   const { data: categories, isLoading: categoriesLoading } =
@@ -91,10 +93,30 @@ export function TransactionForm() {
     defaultValues,
   });
 
+  const transactionType = form.watch('type');
+
+  const filteredCategories = useMemo(() => {
+    if (!categories) return [];
+    const filtered = categories.filter((c) => c.type === transactionType);
+    const selectedCategoryId = form.getValues('categoryId');
+    if (
+      selectedCategoryId &&
+      !filtered.some((c) => c.id === selectedCategoryId)
+    ) {
+      form.setValue('categoryId', '');
+    }
+    return filtered;
+  }, [categories, transactionType, form]);
+
   async function onSubmit(data: TransactionFormValues) {
     if (!user || !firestore) return;
 
-    const collectionRef = collection(firestore, 'users', user.uid, 'transactions');
+    const collectionRef = collection(
+      firestore,
+      'users',
+      user.uid,
+      'transactions'
+    );
     const docRef = doc(collectionRef);
     const docId = docRef.id;
 
@@ -121,16 +143,18 @@ export function TransactionForm() {
 
   async function handleDescriptionBlur(e: React.FocusEvent<HTMLInputElement>) {
     const description = e.target.value;
-    if (description.length > 3 && categories) {
+    if (description.length > 3 && filteredCategories) {
       setIsSuggesting(true);
       try {
-        const availableCategories = categories.map((c) => c.name);
+        const availableCategories = filteredCategories.map((c) => c.name);
         const { suggestedCategory } = await suggestCategory({
           description,
           availableCategories,
         });
         if (suggestedCategory) {
-          const category = categories.find((c) => c.name === suggestedCategory);
+          const category = filteredCategories.find(
+            (c) => c.name === suggestedCategory
+          );
           if (category) {
             form.setValue('categoryId', category.id);
             toast({
@@ -239,7 +263,6 @@ export function TransactionForm() {
               <div className="relative">
                 <Select
                   onValueChange={field.onChange}
-                  defaultValue={field.value}
                   value={field.value}
                   disabled={categoriesLoading}
                 >
@@ -249,7 +272,7 @@ export function TransactionForm() {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {categories?.map((cat) => (
+                    {filteredCategories?.map((cat) => (
                       <SelectItem key={cat.id} value={cat.id}>
                         {cat.name}
                       </SelectItem>
@@ -354,8 +377,17 @@ export function TransactionForm() {
           )}
         />
 
-        <Button type="submit" className="w-full" size="lg">
-          Salvar Transação
+        <Button
+          type="submit"
+          className="w-full"
+          size="lg"
+          disabled={form.formState.isSubmitting}
+        >
+          {form.formState.isSubmitting ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            'Salvar Transação'
+          )}
         </Button>
       </form>
     </Form>

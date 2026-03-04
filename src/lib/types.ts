@@ -18,6 +18,7 @@ export type Category = {
   name: string;
   icon: string;
   color: string;
+  type: 'income' | 'expense';
   createdAt: string;
   updatedAt: string;
 };
