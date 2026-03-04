@@ -10,7 +10,6 @@ import {
 } from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/lib/utils';
-import { SidebarTrigger } from './ui/sidebar';
 
 export function Header() {
   const { toast } = useToast();
@@ -29,7 +28,7 @@ export function Header() {
 
   return (
     <header className="flex h-16 shrink-0 items-center gap-4 border-b bg-background px-4 md:px-6">
-      <SidebarTrigger />
+      <div className="flex-1" />
       <div className="ml-auto flex items-center gap-4">
         <Popover>
           <PopoverTrigger asChild>
