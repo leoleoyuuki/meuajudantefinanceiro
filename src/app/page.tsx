@@ -7,9 +7,9 @@ import { Card } from '@/components/ui/card';
 import {
   Loader2,
   Wallet,
-  TrendingUp,
-  Shield,
-  CreditCard,
+  TrendingDown,
+  FileClock,
+  Repeat,
   PiggyBank,
   Trophy,
   ChevronRight,
@@ -119,7 +119,7 @@ export default function DashboardPage() {
           </div>
         </Card>
         <Card className="flex cursor-pointer items-center gap-3 p-4 transition-shadow hover:shadow-md">
-          <TrendingUp className="size-5 text-muted-foreground" />
+          <TrendingDown className="size-5 text-muted-foreground" />
           <div>
             <p className="text-sm font-medium">Despesas</p>
             <p className="text-base font-semibold">
@@ -128,18 +128,18 @@ export default function DashboardPage() {
           </div>
         </Card>
         <Card className="flex cursor-pointer items-center gap-3 p-4 transition-shadow hover:shadow-md">
-          <Shield className="size-5 text-muted-foreground" />
+          <FileClock className="size-5 text-muted-foreground" />
           <div>
-            <p className="text-sm font-medium">Pensões</p>
+            <p className="text-sm font-medium">Contas fixas</p>
             <p className="text-base font-semibold text-muted-foreground">
               Em breve
             </p>
           </div>
         </Card>
         <Card className="flex cursor-pointer items-center gap-3 p-4 transition-shadow hover:shadow-md">
-          <CreditCard className="size-5 text-muted-foreground" />
+          <Repeat className="size-5 text-muted-foreground" />
           <div>
-            <p className="text-sm font-medium">Cartão</p>
+            <p className="text-sm font-medium">Ganhos fixos</p>
             <p className="text-base font-semibold text-muted-foreground">
               Em breve
             </p>
