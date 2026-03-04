@@ -158,9 +158,12 @@ export default function DashboardPage() {
               <PiggyBank className="size-6 text-primary" />
               <p className="font-semibold">Metas</p>
             </div>
-            <p className="text-xs text-muted-foreground">
+            <Link
+              href="/goals"
+              className="text-xs font-semibold text-primary hover:underline"
+            >
               Próximo depósito aqui
-            </p>
+            </Link>
           </div>
           <p className="mt-2 font-headline text-2xl font-bold">
             {formatCurrency(goalsData.totalSaved)}
