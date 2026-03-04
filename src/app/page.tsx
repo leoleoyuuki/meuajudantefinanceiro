@@ -71,16 +71,20 @@ export default function DashboardPage() {
 
   const goalsData = useMemo(() => {
     if (!goals || goals.length === 0) {
-      return { totalSaved: 0, completedGoals: 0, totalGoals: 0, firstGoal: null };
+      return { totalSaved: 0, firstGoal: null, overallProgress: 0 };
     }
     const totalSaved = goals.reduce(
       (acc, goal) => acc + goal.currentAmount,
       0
     );
-    const totalGoals = goals.length;
-    const completedGoals = goals.filter(g => g.currentAmount >= g.targetAmount).length;
-    
-    return { totalSaved, firstGoal: goals[0], completedGoals, totalGoals };
+    const totalTarget = goals.reduce(
+      (acc, goal) => acc + goal.targetAmount,
+      0
+    );
+    const overallProgress =
+      totalTarget > 0 ? (totalSaved / totalTarget) * 100 : 0;
+
+    return { totalSaved, firstGoal: goals[0], overallProgress };
   }, [goals]);
 
   const { totalIncome, totalExpenses } = dashboardData;
@@ -144,10 +148,7 @@ export default function DashboardPage() {
       </div>
 
       {showGoalsProgress && (
-        <GoalsProgressCard 
-          completedGoals={goalsData.completedGoals} 
-          totalGoals={goalsData.totalGoals} 
-        />
+        <GoalsProgressCard progressPercentage={goalsData.overallProgress} />
       )}
 
       {goals && goals.length > 0 && (

@@ -3,15 +3,13 @@ import { ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 
 type GoalsProgressCardProps = {
-  completedGoals: number;
-  totalGoals: number;
+  progressPercentage: number;
 };
 
 export function GoalsProgressCard({
-  completedGoals,
-  totalGoals,
+  progressPercentage,
 }: GoalsProgressCardProps) {
-  const progress = totalGoals > 0 ? (completedGoals / totalGoals) * 100 : 0;
+  const progress = progressPercentage > 100 ? 100 : progressPercentage;
   const circumference = 100.53; // 2 * PI * 16
   const strokeDashoffset = circumference * (1 - progress / 100);
 
@@ -46,11 +44,16 @@ export function GoalsProgressCard({
                 r="16"
               />
             </svg>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-xs font-bold text-primary">{`${progress.toFixed(
+                0
+              )}%`}</span>
+            </div>
           </div>
           <div>
             <p className="font-semibold text-primary">Progresso das Metas</p>
             <p className="text-sm text-muted-foreground">
-              {completedGoals} de {totalGoals} metas completas
+              {`Total de ${progress.toFixed(2).replace('.', ',')}% alcançado`}
             </p>
           </div>
         </div>
