@@ -2,7 +2,7 @@
 
 import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
 import { FirebaseApp } from 'firebase/app';
-import { Firestore, collection, doc, getDocs, limit, query, writeBatch } from 'firebase/firestore';
+import { Firestore, collection, doc, getDocs, limit, writeBatch, getDoc, setDoc } from 'firebase/firestore';
 import { Auth, User, onAuthStateChanged } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
 import { defaultCategories } from '@/lib/default-categories';
@@ -79,35 +79,46 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 
     const unsubscribe = onAuthStateChanged(
       auth,
-      (firebaseUser) => { // Auth state determined
+      async (firebaseUser) => { // Auth state determined
         if (firebaseUser) {
-          const checkAndCreateDefaultCategories = async () => {
+          const userRef = doc(firestore, "users", firebaseUser.uid);
+          const userSnap = await getDoc(userRef);
+          
+          if (!userSnap.exists()) {
+            // New user, create profile and default categories
             try {
+              const batch = writeBatch(firestore);
+              const now = new Date().toISOString();
+
+              // 1. Create user profile document
+              const userProfileData = {
+                uid: firebaseUser.uid,
+                email: firebaseUser.email,
+                displayName: firebaseUser.displayName,
+                photoURL: firebaseUser.photoURL,
+                createdAt: now,
+              };
+              batch.set(userRef, userProfileData);
+
+              // 2. Create default categories
               const categoriesRef = collection(firestore, 'users', firebaseUser.uid, 'categories');
-              const q = query(categoriesRef, limit(1));
-              const snapshot = await getDocs(q);
-
-              if (snapshot.empty) {
-                const batch = writeBatch(firestore);
-                const now = new Date().toISOString();
-                defaultCategories.forEach((category) => {
-                  const newCategoryRef = doc(categoriesRef);
-                  batch.set(newCategoryRef, {
-                    ...category,
-                    id: newCategoryRef.id,
-                    userId: firebaseUser.uid,
-                    createdAt: now,
-                    updatedAt: now,
-                  });
+              defaultCategories.forEach((category) => {
+                const newCategoryRef = doc(categoriesRef); // Let firestore generate ID
+                batch.set(newCategoryRef, {
+                  ...category,
+                  id: newCategoryRef.id,
+                  userId: firebaseUser.uid,
+                  createdAt: now,
+                  updatedAt: now,
                 });
-                await batch.commit();
-              }
-            } catch (error) {
-              console.error("Failed to create default categories:", error);
-            }
-          };
+              });
+              
+              await batch.commit();
 
-          checkAndCreateDefaultCategories();
+            } catch (error) {
+               console.error("Failed to set up new user:", error);
+            }
+          }
         }
         setUserAuthState({ user: firebaseUser, isUserLoading: false, userError: null });
       },
@@ -204,3 +215,5 @@ export const useUser = (): UserHookResult => { // Renamed from useAuthUser
   const { user, isUserLoading, userError } = useFirebase(); // Leverages the main hook
   return { user, isUserLoading, userError };
 };
+
+    

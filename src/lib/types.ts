@@ -1,3 +1,11 @@
+export type UserProfile = {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+  createdAt: string;
+};
+
 export type Transaction = {
   id: string;
   userId: string;
@@ -58,3 +66,5 @@ export type MonthlySummary = {
   createdAt: string;
   updatedAt: string;
 };
+
+    

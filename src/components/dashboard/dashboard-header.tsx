@@ -34,8 +34,6 @@ export function DashboardHeader() {
   const auth = useAuth();
   const { toast } = useToast();
 
-  const isAnon = user?.isAnonymous;
-
   const handleLogout = () => {
     if (auth) {
       signOut(auth);
@@ -60,22 +58,22 @@ export function DashboardHeader() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Avatar className="size-9 cursor-pointer">
-              {isAnon || !user?.photoURL ? (
+              {user?.photoURL ? (
+                <AvatarImage src={user.photoURL} alt="User Avatar" />
+              ) : (
                 <AvatarFallback className="bg-secondary">
                   <User className="size-5 text-muted-foreground" />
                 </AvatarFallback>
-              ) : (
-                <AvatarImage src={user.photoURL} alt="User Avatar" />
               )}
             </Avatar>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
             <DropdownMenuLabel>
               <p className="font-semibold">
-                {isAnon ? 'Usuário Anônimo' : user?.displayName || 'Usuário'}
+                {user?.displayName || 'Usuário'}
               </p>
               <p className="text-xs font-normal text-muted-foreground">
-                {user?.email || 'Login anônimo'}
+                {user?.email || 'Login com Google'}
               </p>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
@@ -150,3 +148,5 @@ export function DashboardHeader() {
     </div>
   );
 }
+
+    

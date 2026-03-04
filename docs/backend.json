@@ -1,5 +1,38 @@
 {
   "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "type": "object",
+      "description": "Represents a user's profile information.",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "The user's unique ID."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The user's email address."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "The user's display name."
+        },
+        "photoURL": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL of the user's profile picture."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "uid",
+        "createdAt"
+      ]
+    },
     "Category": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Category",
@@ -463,12 +496,21 @@
   },
   "auth": {
     "providers": [
-      "password",
-      "anonymous"
+      "google.com"
     ]
   },
   "firestore": {
     "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "Stores profile information for a user, created on first login."
+        }
+      },
       {
         "path": "/users/{userId}/categories/{categoryId}",
         "definition": {
@@ -613,3 +655,5 @@
     "reasoning": "The recommended Firestore data structure leverages a strict hierarchical model with path-based ownership to ensure robust security, scalability, and debuggability. All user-specific data is nested under a top-level `/users/{userId}/` collection, followed by specific subcollections for each entity type (categories, recurrences, installments, transactions, financialGoals, monthlySummaries).\n\nThis structure achieves **Authorization Independence** by denormalizing the `userId` directly into the document path. For any document under `/users/{userId}/...`, the `userId` is explicitly available in the path wildcard. This allows Firestore security rules to directly compare `request.auth.uid` with the `{userId}` in the path (e.g., `match /users/{userId}/{collection}/{docId} { allow read, write: if request.auth.uid == userId; }`). This eliminates the need for expensive and complex `get()` calls to parent documents or checks on internal document fields for authorization, making rules atomic, simple to write, and highly performant. The `userId` field is still included within each document schema for efficient querying.\n\nFurthermore, this design directly supports **Query Ability and Predictability (QAPs)** for `list` operations. By segregating all data belonging to a specific user under their unique path (`/users/{userId}/`), any `list` query (e.g., fetching all transactions for the current user) naturally operates within the scope of the authenticated user's data. The security rules will automatically enforce that `request.auth.uid` matches the `{userId}` in the path, ensuring that users can only list their own data and preventing rules from acting as data filters. This guarantees that `list` queries only return authorized results without leaking metadata or requiring complex client-side filtering. Each collection within a user's path maintains a homogeneous security posture (private to the owning user), simplifying rule logic and enhancing debuggability."
   }
 }
+
+    

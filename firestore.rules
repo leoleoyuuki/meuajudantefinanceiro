@@ -60,6 +60,31 @@ service cloud.firestore {
     function isOwnerFieldImmutable() {
       return request.resource.data.userId == resource.data.userId;
     }
+    
+    /**
+     * Validates that the 'uid' field in a new user profile matches the owner's UID.
+     */
+    function isCreatingOwnProfile(userId) {
+      return request.resource.data.uid == userId;
+    }
+
+    /**
+     * Validates that the 'uid' field is immutable for user profiles.
+     */
+    function isUidFieldImmutable() {
+      return request.resource.data.uid == resource.data.uid;
+    }
+
+    /**
+     * @description Grants access to a user's own profile document.
+     * @path /users/{userId}
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isCreatingOwnProfile(userId);
+      allow update: if isExistingOwner(userId) && isUidFieldImmutable();
+      allow delete: if false; // Disallow client-side profile deletion
+    }
 
     /**
      * @description Enforces strict ownership for all user-specific data, including categories, transactions, goals, etc.
@@ -78,3 +103,5 @@ service cloud.firestore {
     }
   }
 }
+
+    
