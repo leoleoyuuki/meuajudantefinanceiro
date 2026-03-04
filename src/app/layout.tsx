@@ -3,7 +3,8 @@ import { Inter, Poppins } from 'next/font/google';
 import './globals.css';
 import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
-import { BottomNav } from '@/components/bottom-nav';
+import { FirebaseClientProvider } from '@/firebase';
+import AuthWrapper from '@/components/auth-wrapper';
 
 const fontBody = Inter({
   subsets: ['latin'],
@@ -22,7 +23,7 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
   icons: {
     apple: '/icon.png',
-  }
+  },
 };
 
 export default function RootLayout({
@@ -32,14 +33,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body className={cn('font-body antialiased', fontBody.variable, fontHeadline.variable)}>
-        <div className="relative flex min-h-screen w-full flex-col bg-secondary/50">
-          <div className="container mx-auto max-w-lg flex-1 bg-background shadow-lg">
-            <main className="pb-28">{children}</main>
-          </div>
-          <BottomNav />
-        </div>
-        <Toaster />
+      <body
+        className={cn(
+          'font-body antialiased',
+          fontBody.variable,
+          fontHeadline.variable
+        )}
+      >
+        <FirebaseClientProvider>
+          <AuthWrapper>{children}</AuthWrapper>
+          <Toaster />
+        </FirebaseClientProvider>
       </body>
     </html>
   );

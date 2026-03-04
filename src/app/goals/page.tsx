@@ -1,3 +1,5 @@
+'use client';
+
 import { PageHeader } from '@/components/page-header';
 import {
   Card,
@@ -7,16 +9,37 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { goals } from '@/lib/data';
 import { formatCurrency } from '@/lib/utils';
 import { format } from 'date-fns';
+import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
+import { collection } from 'firebase/firestore';
+import type { Goal } from '@/lib/types';
+import { Loader2 } from 'lucide-react';
 
 export default function GoalsPage() {
+  const firestore = useFirestore();
+  const { user } = useUser();
+
+  const goalsQuery = useMemoFirebase(
+    () =>
+      user ? collection(firestore, 'users', user.uid, 'financialGoals') : null,
+    [firestore, user]
+  );
+  const { data: goals, isLoading } = useCollection<Goal>(goalsQuery);
+
+  if (isLoading) {
+    return (
+      <div className="flex h-[80vh] items-center justify-center">
+        <Loader2 className="size-8 animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
       <PageHeader title="Metas Financeiras" />
       <div className="grid gap-6 md:grid-cols-2">
-        {goals.map((goal) => {
+        {goals?.map((goal) => {
           const progress = (goal.currentAmount / goal.targetAmount) * 100;
           return (
             <Card key={goal.id}>
@@ -37,7 +60,9 @@ export default function GoalsPage() {
                 </div>
               </CardContent>
               <CardFooter className="flex justify-end text-xs text-muted-foreground">
-                <span>Prazo: {format(goal.deadline, 'dd/MM/yyyy')}</span>
+                <span>
+                  Prazo: {format(new Date(goal.deadline), 'dd/MM/yyyy')}
+                </span>
               </CardFooter>
             </Card>
           );

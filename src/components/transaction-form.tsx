@@ -30,11 +30,20 @@ import { CalendarIcon, Loader2 } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { Textarea } from '@/components/ui/textarea';
-import { categories } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { suggestCategory } from '@/app/actions';
 import { useState } from 'react';
+import {
+  useUser,
+  useFirestore,
+  useCollection,
+  addDocumentNonBlocking,
+  useMemoFirebase,
+  setDocumentNonBlocking,
+} from '@/firebase';
+import { collection, doc } from 'firebase/firestore';
+import type { Category } from '@/lib/types';
 
 const transactionFormSchema = z.object({
   type: z.enum(['income', 'expense'], {
@@ -67,6 +76,15 @@ export function TransactionForm() {
   const { toast } = useToast();
   const router = useRouter();
   const [isSuggesting, setIsSuggesting] = useState(false);
+  const firestore = useFirestore();
+  const { user } = useUser();
+
+  const categoriesQuery = useMemoFirebase(
+    () => (user ? collection(firestore, 'users', user.uid, 'categories') : null),
+    [firestore, user]
+  );
+  const { data: categories, isLoading: categoriesLoading } =
+    useCollection<Category>(categoriesQuery);
 
   const form = useForm<TransactionFormValues>({
     resolver: zodResolver(transactionFormSchema),
@@ -74,19 +92,36 @@ export function TransactionForm() {
   });
 
   async function onSubmit(data: TransactionFormValues) {
+    if (!user || !firestore) return;
+
+    const collectionRef = collection(firestore, 'users', user.uid, 'transactions');
+    const docRef = doc(collectionRef);
+    const docId = docRef.id;
+
+    const transactionData = {
+      ...data,
+      id: docId,
+      userId: user.uid,
+      date: data.date.toISOString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      notes: data.notes || '',
+    };
+
+    setDocumentNonBlocking(docRef, transactionData, {});
+
     toast({
       title: 'Transação salva!',
       description: `Sua ${
         data.type === 'income' ? 'receita' : 'despesa'
       } foi registrada.`,
     });
-    console.log(data);
     router.push('/');
   }
 
   async function handleDescriptionBlur(e: React.FocusEvent<HTMLInputElement>) {
     const description = e.target.value;
-    if (description.length > 3) {
+    if (description.length > 3 && categories) {
       setIsSuggesting(true);
       try {
         const availableCategories = categories.map((c) => c.name);
@@ -206,6 +241,7 @@ export function TransactionForm() {
                   onValueChange={field.onChange}
                   defaultValue={field.value}
                   value={field.value}
+                  disabled={categoriesLoading}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -213,14 +249,14 @@ export function TransactionForm() {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {categories.map((cat) => (
+                    {categories?.map((cat) => (
                       <SelectItem key={cat.id} value={cat.id}>
                         {cat.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                {isSuggesting && (
+                {(isSuggesting || categoriesLoading) && (
                   <Loader2 className="absolute right-10 top-2.5 size-5 animate-spin text-muted-foreground" />
                 )}
               </div>

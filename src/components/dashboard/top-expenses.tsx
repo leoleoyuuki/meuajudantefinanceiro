@@ -2,7 +2,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { iconMap } from '@/lib/icons';
 import type { Transaction } from '@/lib/types';
 import { formatCurrency } from '@/lib/utils';
-import { TrendingDown } from 'lucide-react';
 
 type TopExpensesProps = {
   data: Transaction[];
@@ -18,7 +17,8 @@ export function TopExpenses({ data }: TopExpensesProps) {
         {data.length > 0 ? (
           <div className="flex flex-col gap-4">
             {data.map((transaction) => {
-              const Icon = iconMap[transaction.category.icon];
+              const Icon = transaction.category && iconMap[transaction.category.icon];
+              const color = transaction.category?.color || '#888';
               return (
                 <div
                   key={transaction.id}
@@ -27,12 +27,12 @@ export function TopExpenses({ data }: TopExpensesProps) {
                   <div className="flex items-center gap-3">
                     <div
                       className="flex size-10 items-center justify-center rounded-lg"
-                      style={{ backgroundColor: `${transaction.category.color}20` }}
+                      style={{ backgroundColor: `${color}20` }}
                     >
                       {Icon && (
                         <Icon
                           className="size-5"
-                          style={{ color: transaction.category.color }}
+                          style={{ color: color }}
                         />
                       )}
                     </div>
