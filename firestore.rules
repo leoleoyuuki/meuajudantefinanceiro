@@ -1,0 +1,80 @@
+/**
+ * Core Philosophy: This ruleset enforces a strict user-ownership model where all user-specific data is isolated within a dedicated data tree. Access control is based on the document's path, ensuring that users can only interact with their own information.
+ *
+ * Data Structure: All user data is hierarchically organized under the top-level `/users` collection. Each user's data is contained within a document representing them, for example: `/users/{userId}/categories/{categoryId}`, `/users/{userId}/transactions/{transactionId}`, etc.
+ *
+ * Key Security Decisions:
+ * - Path-Based Authorization: The user's UID is a mandatory part of the document path for all private data. This allows for simple, performant rules that compare `request.auth.uid` directly with the `{userId}` wildcard in the path.
+ * - No Global Access: There are no global admin roles. Access is strictly determined by user ownership.
+ * - Disallowed User Listing: Listing documents in the top-level `/users` collection is prohibited to protect user privacy.
+ *
+ * Denormalization for Authorization: The security model relies on the path structure itself as a form of denormalization. The `userId` in the path makes authorization checks atomic and independent, removing the need for costly `get()` calls to other documents. For data integrity on writes, each document must also contain an internal `userId` field that matches the `userId` in its path.
+ *
+ * Structural Segregation: This ruleset exclusively handles private, user-owned data. There are no public collections, which simplifies the security model and eliminates potential data leakage vectors.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper Functions for Reusability and Readability
+
+    /**
+     * Checks if a user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Verifies that the currently authenticated user's UID matches the
+     * UID specified in the document path. This is the core of the
+     * user-ownership security model.
+     * @param userId The user ID from the path wildcard.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Ensures that a document exists before allowing an update or delete,
+     * and that the requesting user is the owner.
+     * @param userId The user ID from the path wildcard.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+    
+    /**
+     * Validates that the 'userId' field in a new document matches the owner's
+     * UID from the path. This enforces relational integrity at creation time.
+     * @param userId The user ID from the path wildcard.
+     */
+    function isCreatingOwnContent(userId) {
+      return request.resource.data.userId == userId;
+    }
+
+    /**
+     * Validates that the 'userId' field is immutable and cannot be changed
+     * during an update operation, preventing documents from being reassigned.
+     */
+    function isOwnerFieldImmutable() {
+      return request.resource.data.userId == resource.data.userId;
+    }
+
+    /**
+     * @description Enforces strict ownership for all user-specific data, including categories, transactions, goals, etc.
+     * @path /users/{userId}/{anySubcollection}/{anyDocId}
+     * @allow (create) An authenticated user creating a transaction document within their own data tree (e.g., in `/users/abc/transactions/xyz`), provided the document's internal `userId` field is also 'abc'.
+     * @deny (get) User 'xyz' attempting to read a document from `/users/abc/categories/123`. The rule `isOwner('abc')` will fail.
+     * @deny (create) User 'abc' trying to create a document in their own path but with an internal `userId` field of 'xyz'. The `isCreatingOwnContent` check will fail.
+     * @principle Restricts all access to a user's own data tree, enforcing data isolation and privacy.
+     */
+    match /users/{userId}/{collection}/{docId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && isCreatingOwnContent(userId);
+      allow update: if isExistingOwner(userId) && isOwnerFieldImmutable();
+      allow delete: if isExistingOwner(userId);
+    }
+  }
+}

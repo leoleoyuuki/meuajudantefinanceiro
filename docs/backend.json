@@ -1,0 +1,554 @@
+{
+  "entities": {
+    "Category": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Category",
+      "type": "object",
+      "description": "Represents a custom financial category for organizing transactions, such as 'Food', 'Transport', or 'Salary'.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Category entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who owns this category. (Relationship: User 1:N Category)"
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the category (e.g., 'Alimentação', 'Salário')."
+        },
+        "type": {
+          "type": "string",
+          "description": "The type of transactions this category applies to ('income' or 'expense').",
+          "items": {
+            "type": "string"
+          }
+        },
+        "icon": {
+          "type": "string",
+          "description": "A visual icon identifier associated with the category for better recognition."
+        },
+        "color": {
+          "type": "string",
+          "description": "A hexadecimal color code associated with the category for visual distinction (e.g., '#FF5733')."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the category was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the category was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "name",
+        "type",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Recurrence": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Recurrence",
+      "type": "object",
+      "description": "Manages settings for recurring financial transactions, such as subscriptions or rent payments.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Recurrence entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who owns this recurrence. (Relationship: User 1:N Recurrence)"
+        },
+        "description": {
+          "type": "string",
+          "description": "A brief description of the recurring financial event."
+        },
+        "type": {
+          "type": "string",
+          "description": "The type of transaction ('income' or 'expense') this recurrence represents."
+        },
+        "amount": {
+          "type": "number",
+          "description": "The monetary value of each occurrence of the recurring transaction."
+        },
+        "categoryId": {
+          "type": "string",
+          "description": "Reference to the Category associated with this recurring transaction. (Relationship: Category 1:N Recurrence)"
+        },
+        "paymentMethod": {
+          "type": "string",
+          "description": "The method used for this recurring payment (e.g., 'Credit Card', 'Bank Transfer')."
+        },
+        "startDate": {
+          "type": "string",
+          "description": "The date when the recurring transaction started.",
+          "format": "date-time"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "Optional date when the recurring transaction is scheduled to end.",
+          "format": "date-time"
+        },
+        "frequency": {
+          "type": "string",
+          "description": "How often the transaction occurs (e.g., 'daily', 'weekly', 'monthly', 'yearly')."
+        },
+        "dayOfMonth": {
+          "type": "number",
+          "description": "The day of the month for monthly recurrences (1-31)."
+        },
+        "dayOfWeek": {
+          "type": "number",
+          "description": "The day of the week for weekly recurrences (0 for Sunday, 6 for Saturday)."
+        },
+        "nextOccurrenceDate": {
+          "type": "string",
+          "description": "The calculated date for the next scheduled occurrence.",
+          "format": "date-time"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the recurrence was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the recurrence was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "description",
+        "type",
+        "amount",
+        "categoryId",
+        "startDate",
+        "frequency",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Installment": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Installment",
+      "type": "object",
+      "description": "Manages financial transactions that are paid in multiple installments.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Installment entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who owns this installment plan. (Relationship: User 1:N Installment)"
+        },
+        "description": {
+          "type": "string",
+          "description": "A brief description of the installment plan (e.g., 'TV Nova')."
+        },
+        "totalAmount": {
+          "type": "number",
+          "description": "The total monetary value of the item or service being paid in installments."
+        },
+        "numberOfInstallments": {
+          "type": "number",
+          "description": "The total number of installments for the payment plan."
+        },
+        "paidInstallments": {
+          "type": "number",
+          "description": "The count of installments that have already been paid."
+        },
+        "installmentAmount": {
+          "type": "number",
+          "description": "The monetary value of each individual installment."
+        },
+        "firstInstallmentDate": {
+          "type": "string",
+          "description": "The date of the first installment payment.",
+          "format": "date-time"
+        },
+        "categoryId": {
+          "type": "string",
+          "description": "Reference to the Category associated with this installment plan. (Relationship: Category 1:N Installment)"
+        },
+        "paymentMethod": {
+          "type": "string",
+          "description": "The method used for these installment payments (e.g., 'Credit Card')."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the installment plan was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the installment plan was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "description",
+        "totalAmount",
+        "numberOfInstallments",
+        "paidInstallments",
+        "installmentAmount",
+        "firstInstallmentDate",
+        "categoryId",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Transaction": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Transaction",
+      "type": "object",
+      "description": "Represents a single financial entry, either an income or an expense.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Transaction entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who made this transaction. (Relationship: User 1:N Transaction)"
+        },
+        "type": {
+          "type": "string",
+          "description": "The type of transaction ('income' or 'expense')."
+        },
+        "amount": {
+          "type": "number",
+          "description": "The monetary value of the transaction."
+        },
+        "description": {
+          "type": "string",
+          "description": "A brief description or observation about the transaction."
+        },
+        "categoryId": {
+          "type": "string",
+          "description": "Reference to the Category for this transaction. (Relationship: Category 1:N Transaction)"
+        },
+        "date": {
+          "type": "string",
+          "description": "The date when the transaction occurred.",
+          "format": "date-time"
+        },
+        "paymentMethod": {
+          "type": "string",
+          "description": "The method of payment used (e.g., 'Credit Card', 'Cash', 'Pix')."
+        },
+        "isRecurrent": {
+          "type": "boolean",
+          "description": "Indicates if this transaction is part of a recurring series."
+        },
+        "recurrenceId": {
+          "type": "string",
+          "description": "Reference to the Recurrence entity if this transaction is part of a recurring series. (Relationship: Recurrence 1:N Transaction)"
+        },
+        "installmentId": {
+          "type": "string",
+          "description": "Reference to the Installment entity if this transaction is part of an installment plan. (Relationship: Installment 1:N Transaction)"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the transaction was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the transaction was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "type",
+        "amount",
+        "description",
+        "categoryId",
+        "date",
+        "paymentMethod",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "FinancialGoal": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "FinancialGoal",
+      "type": "object",
+      "description": "Allows users to define and track progress towards financial goals like savings or travel funds.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the FinancialGoal entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who owns this financial goal. (Relationship: User 1:N FinancialGoal)"
+        },
+        "name": {
+          "type": "string",
+          "description": "A descriptive name for the financial goal (e.g., 'Viagem para Europa', 'Reserva de Emergência')."
+        },
+        "targetAmount": {
+          "type": "number",
+          "description": "The total monetary amount the user aims to save for this goal."
+        },
+        "currentAmount": {
+          "type": "number",
+          "description": "The current amount saved towards the goal."
+        },
+        "startDate": {
+          "type": "string",
+          "description": "The date when the financial goal was initiated.",
+          "format": "date-time"
+        },
+        "targetDate": {
+          "type": "string",
+          "description": "Optional target date for achieving the goal.",
+          "format": "date-time"
+        },
+        "description": {
+          "type": "string",
+          "description": "An optional detailed description of the goal."
+        },
+        "color": {
+          "type": "string",
+          "description": "A hexadecimal color code to visually represent the goal's progress bar (e.g., '#4CAF50')."
+        },
+        "icon": {
+          "type": "string",
+          "description": "A visual icon identifier associated with the goal."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the financial goal was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the financial goal was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "name",
+        "targetAmount",
+        "currentAmount",
+        "startDate",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "MonthlySummary": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "MonthlySummary",
+      "type": "object",
+      "description": "Aggregated financial summary data for a specific month for a user, used for historical analysis and dashboards.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the MonthlySummary entity (e.g., 'userId_YYYY-MM')."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User for whom this summary was generated. (Relationship: User 1:N MonthlySummary)"
+        },
+        "month": {
+          "type": "number",
+          "description": "The month of the summary (1-12)."
+        },
+        "year": {
+          "type": "number",
+          "description": "The year of the summary (e.g., 2023)."
+        },
+        "totalIncome": {
+          "type": "number",
+          "description": "The total income recorded for the month."
+        },
+        "totalExpense": {
+          "type": "number",
+          "description": "The total expenses recorded for the month."
+        },
+        "netBalance": {
+          "type": "number",
+          "description": "The net balance (totalIncome - totalExpense) for the month."
+        },
+        "spendingByCategory": {
+          "type": "array",
+          "description": "An array of objects summarizing spending per category for the month.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the monthly summary was created/generated.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the monthly summary was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "month",
+        "year",
+        "totalIncome",
+        "totalExpense",
+        "netBalance",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}/categories/{categoryId}",
+        "definition": {
+          "entityName": "Category",
+          "schema": {
+            "$ref": "#/backend/entities/Category"
+          },
+          "description": "Stores custom financial categories, each belonging to a specific user. The 'userId' is embedded in the path for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the User who owns this category."
+            },
+            {
+              "name": "categoryId",
+              "description": "The unique identifier for the Category document."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/recurrences/{recurrenceId}",
+        "definition": {
+          "entityName": "Recurrence",
+          "schema": {
+            "$ref": "#/backend/entities/Recurrence"
+          },
+          "description": "Manages settings for recurring financial transactions, owned by a specific user. The 'userId' is embedded in the path for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the User who owns this recurrence."
+            },
+            {
+              "name": "recurrenceId",
+              "description": "The unique identifier for the Recurrence document."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/installments/{installmentId}",
+        "definition": {
+          "entityName": "Installment",
+          "schema": {
+            "$ref": "#/backend/entities/Installment"
+          },
+          "description": "Manages financial transactions that are paid in multiple installments, owned by a specific user. The 'userId' is embedded in the path for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the User who owns this installment plan."
+            },
+            {
+              "name": "installmentId",
+              "description": "The unique identifier for the Installment document."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/transactions/{transactionId}",
+        "definition": {
+          "entityName": "Transaction",
+          "schema": {
+            "$ref": "#/backend/entities/Transaction"
+          },
+          "description": "Represents a single financial entry (income or expense) made by a specific user. The 'userId' is embedded in the path for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the User who made this transaction."
+            },
+            {
+              "name": "transactionId",
+              "description": "The unique identifier for the Transaction document."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/financialGoals/{financialGoalId}",
+        "definition": {
+          "entityName": "FinancialGoal",
+          "schema": {
+            "$ref": "#/backend/entities/FinancialGoal"
+          },
+          "description": "Allows users to define and track progress towards financial goals. Each goal is owned by a specific user, with 'userId' embedded in the path for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the User who owns this financial goal."
+            },
+            {
+              "name": "financialGoalId",
+              "description": "The unique identifier for the FinancialGoal document."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/monthlySummaries/{monthlySummaryId}",
+        "definition": {
+          "entityName": "MonthlySummary",
+          "schema": {
+            "$ref": "#/backend/entities/MonthlySummary"
+          },
+          "description": "Stores aggregated financial summary data for a specific month for a user. The 'userId' is embedded in the path for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the User for whom this summary was generated."
+            },
+            {
+              "name": "monthlySummaryId",
+              "description": "The unique identifier for the MonthlySummary document (e.g., 'YYYY-MM')."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The recommended Firestore data structure leverages a strict hierarchical model with path-based ownership to ensure robust security, scalability, and debuggability. All user-specific data is nested under a top-level `/users/{userId}/` collection, followed by specific subcollections for each entity type (categories, recurrences, installments, transactions, financialGoals, monthlySummaries).\n\nThis structure achieves **Authorization Independence** by denormalizing the `userId` directly into the document path. For any document under `/users/{userId}/...`, the `userId` is explicitly available in the path wildcard. This allows Firestore security rules to directly compare `request.auth.uid` with the `{userId}` in the path (e.g., `match /users/{userId}/{collection}/{docId} { allow read, write: if request.auth.uid == userId; }`). This eliminates the need for expensive and complex `get()` calls to parent documents or checks on internal document fields for authorization, making rules atomic, simple to write, and highly performant. The `userId` field is still included within each document schema for efficient querying.\n\nFurthermore, this design directly supports **Query Ability and Predictability (QAPs)** for `list` operations. By segregating all data belonging to a specific user under their unique path (`/users/{userId}/`), any `list` query (e.g., fetching all transactions for the current user) naturally operates within the scope of the authenticated user's data. The security rules will automatically enforce that `request.auth.uid` matches the `{userId}` in the path, ensuring that users can only list their own data and preventing rules from acting as data filters. This guarantees that `list` queries only return authorized results without leaking metadata or requiring complex client-side filtering. Each collection within a user's path maintains a homogeneous security posture (private to the owning user), simplifying rule logic and enhancing debuggability."
+  }
+}
