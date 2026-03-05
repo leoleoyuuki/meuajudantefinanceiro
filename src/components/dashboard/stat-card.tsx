@@ -11,14 +11,14 @@ type StatCardProps = {
 
 export function StatCard({ title, value, className }: StatCardProps) {
   return (
-    <div className="flex flex-1 flex-col gap-2 p-6">
+    <div className="flex flex-1 flex-col gap-2 p-4">
       <div className="flex items-center justify-between text-sm text-muted-foreground">
         <h3 className="font-medium">{title}</h3>
         <Eye className="size-4" />
       </div>
       <p
         className={cn(
-          'font-headline text-2xl font-semibold text-foreground',
+          'font-headline text-xl font-semibold text-foreground',
           className
         )}
       >

@@ -194,21 +194,21 @@ export default function DashboardPage() {
                 value={formatCurrency(finalBalance)}
                 className={cn(finalBalance < 0 && 'text-destructive')}
               />
-              <div className="mx-6 hidden h-12 w-[1px] bg-border md:block" />
+              <div className="mx-4 hidden h-12 w-[1px] bg-border md:block" />
               <div className="my-2 h-[1px] w-full bg-border md:hidden" />
               <StatCard
                 title="Receitas"
                 value={formatCurrency(dashboardData.totalIncome)}
                 className="text-primary"
               />
-              <div className="mx-6 hidden h-12 w-[1px] bg-border md:block" />
+              <div className="mx-4 hidden h-12 w-[1px] bg-border md:block" />
               <div className="my-2 h-[1px] w-full bg-border md:hidden" />
               <StatCard
                 title="Despesas"
                 value={formatCurrency(dashboardData.totalExpense)}
                 className="text-destructive"
               />
-              <div className="mx-6 hidden h-12 w-[1px] bg-border md:block" />
+              <div className="mx-4 hidden h-12 w-[1px] bg-border md:block" />
               <div className="my-2 h-[1px] w-full bg-border md:hidden" />
               <StatCard
                 title="Valor Investido"
