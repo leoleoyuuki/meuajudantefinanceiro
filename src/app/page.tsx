@@ -206,16 +206,16 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex flex-col gap-6 lg:col-span-1">
-          <Button
-            asChild
-            className="hidden w-full lg:flex"
-          >
+          <Button asChild size="sm" className="flex w-full md:hidden">
             <Link href="/add-transaction">
               <PlusCircle className="mr-2 h-4 w-4" />
               Novo Lançamento
             </Link>
           </Button>
-          <Button asChild size="sm" className="flex w-full lg:hidden">
+          <Button
+            asChild
+            className="hidden w-full md:flex"
+          >
             <Link href="/add-transaction">
               <PlusCircle className="mr-2 h-4 w-4" />
               Novo Lançamento
