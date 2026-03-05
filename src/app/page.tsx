@@ -217,6 +217,7 @@ export default function DashboardPage() {
               />
             </CardContent>
           </Card>
+          <MonthlyBalanceChart data={monthlySummaries || []} />
           <RecentTransactions transactions={enrichedTransactions} />
         </div>
 
@@ -297,7 +298,6 @@ export default function DashboardPage() {
               </Button>
             </Card>
           )}
-          <MonthlyBalanceChart data={monthlySummaries || []} />
           <CategorySpendingChart data={categorySpendingData} />
         </div>
       </div>
