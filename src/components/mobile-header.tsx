@@ -19,13 +19,26 @@ import {
   Crown,
   Gift,
   LifeBuoy,
+  Copy,
 } from 'lucide-react';
 import Link from 'next/link';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
+import { formatCurrency } from '@/lib/utils';
+import { Button } from './ui/button';
 
 export function MobileHeader() {
   const pathname = usePathname();
   const { user } = useUser();
   const auth = useAuth();
+  const { toast } = useToast();
 
   const handleLogout = () => {
     if (auth) {
@@ -34,7 +47,7 @@ export function MobileHeader() {
   };
 
   const getPageTitle = () => {
-    if (pathname === '/') return 'Início';
+    if (pathname === '/') return '';
     if (pathname.startsWith('/transactions')) return 'Extrato';
     if (pathname.startsWith('/add-transaction')) return 'Nova Transação';
     if (pathname.startsWith('/goals/add')) return 'Nova Meta';
@@ -43,6 +56,17 @@ export function MobileHeader() {
     return 'Meu Ajudante';
   };
 
+  const handleCopyCoupon = () => {
+    const coupon = 'FINPRO15';
+    navigator.clipboard.writeText(coupon);
+    toast({
+      title: 'Cupom copiado!',
+      description: 'Compartilhe com seus amigos.',
+    });
+  };
+
+  const annualPrice = 299.9;
+  const discount = annualPrice * 0.15;
   const displayName = user?.displayName || 'Usuário';
 
   return (
@@ -79,18 +103,58 @@ export function MobileHeader() {
             </p>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem asChild>
-            <Link href="#">
-              <Crown className="mr-2 h-4 w-4" />
-              <span>Premium</span>
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link href="#">
-              <Gift className="mr-2 h-4 w-4" />
-              <span>Indique e Ganhe</span>
-            </Link>
-          </DropdownMenuItem>
+          <Dialog>
+            <DialogTrigger asChild>
+              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                <Crown className="mr-2 h-4 w-4" />
+                <span>Premium</span>
+              </DropdownMenuItem>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Crown /> Premium
+                </DialogTitle>
+              </DialogHeader>
+              <div className="text-sm">
+                Você tem <strong>30 dias</strong> restantes em seu teste.
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog>
+            <DialogTrigger asChild>
+              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                <Gift className="mr-2 h-4 w-4" />
+                <span>Indique e Ganhe</span>
+              </DropdownMenuItem>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Indique um amigo</DialogTitle>
+                <DialogDescription>
+                  Seu amigo economiza{' '}
+                  <span className="font-bold text-primary">
+                    {formatCurrency(discount)} (15% OFF)
+                  </span>{' '}
+                  na anuidade.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex items-center space-x-2">
+                <div className="flex-1 rounded-md border border-dashed border-primary bg-primary/10 px-3 py-2 text-center font-mono text-sm font-semibold text-primary">
+                  FINPRO15
+                </div>
+                <Button
+                  onClick={handleCopyCoupon}
+                  size="icon"
+                  className="shrink-0"
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
           <DropdownMenuItem asChild>
             <Link href="#">
               <LifeBuoy className="mr-2 h-4 w-4" />
