@@ -121,7 +121,6 @@ export default function DashboardPage() {
 
   const dashboardData = useMemo(() => {
     const currentMonthSummary = monthlySummaries?.[0];
-    const totalSavedForGoals = goalsData.totalSaved || 0;
     if (
       !currentMonthSummary ||
       currentMonthSummary.id !== format(new Date(), 'yyyy-MM')
@@ -130,16 +129,16 @@ export default function DashboardPage() {
         totalIncome: 0,
         totalExpense: 0,
         balance: 0,
-        invested: totalSavedForGoals,
+        invested: 0,
       };
     }
     return {
       totalIncome: currentMonthSummary.totalIncome,
       totalExpense: currentMonthSummary.totalExpense,
       balance: currentMonthSummary.netBalance,
-      invested: totalSavedForGoals,
+      invested: currentMonthSummary.totalInvested || 0,
     };
-  }, [monthlySummaries, goalsData]);
+  }, [monthlySummaries]);
 
   const categorySpendingData = useMemo(() => {
     if (!monthlySummaries || !categories) return [];

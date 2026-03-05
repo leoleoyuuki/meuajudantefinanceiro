@@ -463,6 +463,10 @@
           "type": "number",
           "description": "The net balance (totalIncome - totalExpense) for the month."
         },
+        "totalInvested": {
+          "type": "number",
+          "description": "The total amount invested towards goals for the month."
+        },
         "spendingByCategory": {
           "type": "array",
           "description": "An array of objects summarizing spending per category for the month.",

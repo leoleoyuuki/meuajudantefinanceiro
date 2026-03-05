@@ -18,8 +18,15 @@ import {
   useMemoFirebase,
   updateDocumentNonBlocking,
 } from '@/firebase';
-import { collection, doc, updateDoc, increment } from 'firebase/firestore';
-import type { FinancialGoal } from '@/lib/types';
+import {
+  collection,
+  doc,
+  updateDoc,
+  increment,
+  getDoc,
+  setDoc,
+} from 'firebase/firestore';
+import type { FinancialGoal, MonthlySummary } from '@/lib/types';
 import { Loader2, PlusCircle, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -81,14 +88,16 @@ export default function GoalsPage() {
       'financialGoals',
       selectedGoal.id
     );
-    const now = new Date().toISOString();
+    const now = new Date();
+    const nowISO = now.toISOString();
 
     updateDocumentNonBlocking(goalRef, {
       currentAmount: newCurrentAmount,
-      updatedAt: now,
+      updatedAt: nowISO,
     });
 
     try {
+      // Update all-time goals summary
       const summaryRef = doc(
         firestore,
         'users',
@@ -98,10 +107,45 @@ export default function GoalsPage() {
       );
       await updateDoc(summaryRef, {
         totalCurrentAmount: increment(numericAmount),
-        updatedAt: now,
+        updatedAt: nowISO,
       });
+
+      // Update monthly summary for investments
+      const monthlySummaryId = format(now, 'yyyy-MM');
+      const monthlySummaryRef = doc(
+        firestore,
+        'users',
+        user.uid,
+        'monthlySummaries',
+        monthlySummaryId
+      );
+      const monthlySummarySnap = await getDoc(monthlySummaryRef);
+
+      if (monthlySummarySnap.exists()) {
+        await updateDoc(monthlySummaryRef, {
+          totalInvested: increment(numericAmount),
+          updatedAt: nowISO,
+        });
+      } else {
+        const month = parseInt(format(now, 'M'));
+        const year = parseInt(format(now, 'yyyy'));
+        const newSummary: MonthlySummary = {
+          id: monthlySummaryId,
+          userId: user.uid,
+          month,
+          year,
+          totalIncome: 0,
+          totalExpense: 0,
+          netBalance: 0,
+          spendingByCategory: [],
+          totalInvested: numericAmount,
+          createdAt: nowISO,
+          updatedAt: nowISO,
+        };
+        await setDoc(monthlySummaryRef, newSummary);
+      }
     } catch (error) {
-      console.error('Failed to update goals summary:', error);
+      console.error('Failed to update summaries:', error);
     }
 
     toast({
