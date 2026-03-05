@@ -62,9 +62,7 @@ export type MonthlySummary = {
   totalIncome: number;
   totalExpense: number;
   netBalance: number;
-  spendingByCategory: any[];
+  spendingByCategory: { categoryId: string; amount: number }[];
   createdAt: string;
   updatedAt: string;
 };
-
-    

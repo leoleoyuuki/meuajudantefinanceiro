@@ -49,7 +49,7 @@ import {
   increment,
   updateDoc,
 } from 'firebase/firestore';
-import type { Category, Transaction } from '@/lib/types';
+import type { Category, Transaction, MonthlySummary } from '@/lib/types';
 
 const transactionFormSchema = z.object({
   type: z.enum(['income', 'expense'], {
@@ -155,17 +155,16 @@ export function TransactionForm() {
       );
 
       const summarySnap = await getDoc(summaryRef);
-
-      const fieldToUpdate =
-        data.type === 'income' ? 'totalIncome' : 'totalExpense';
       const amount = data.amount;
       const netIncrement = data.type === 'income' ? amount : -amount;
+      const fieldToUpdate =
+        data.type === 'income' ? 'totalIncome' : 'totalExpense';
 
       if (!summarySnap.exists()) {
         const month = parseInt(format(data.date, 'M'));
         const year = parseInt(format(data.date, 'yyyy'));
         const now = new Date().toISOString();
-        const newSummary = {
+        const newSummary: MonthlySummary = {
           id: summaryId,
           userId: user.uid,
           month,
@@ -173,17 +172,42 @@ export function TransactionForm() {
           totalIncome: data.type === 'income' ? amount : 0,
           totalExpense: data.type === 'expense' ? amount : 0,
           netBalance: netIncrement,
-          spendingByCategory: [],
+          spendingByCategory:
+            data.type === 'expense'
+              ? [{ categoryId: data.categoryId, amount: data.amount }]
+              : [],
           createdAt: now,
           updatedAt: now,
         };
         setDocumentNonBlocking(summaryRef, newSummary, {});
       } else {
-        updateDoc(summaryRef, {
+        const summaryData = summarySnap.data() as MonthlySummary;
+        const updateData: { [key: string]: any } = {
           [fieldToUpdate]: increment(amount),
           netBalance: increment(netIncrement),
           updatedAt: new Date().toISOString(),
-        });
+        };
+
+        if (data.type === 'expense') {
+          const newSpendingByCategory = [
+            ...(summaryData.spendingByCategory || []),
+          ];
+          const categoryIndex = newSpendingByCategory.findIndex(
+            (item) => item.categoryId === data.categoryId
+          );
+
+          if (categoryIndex > -1) {
+            newSpendingByCategory[categoryIndex].amount += data.amount;
+          } else {
+            newSpendingByCategory.push({
+              categoryId: data.categoryId,
+              amount: data.amount,
+            });
+          }
+          updateData.spendingByCategory = newSpendingByCategory;
+        }
+
+        updateDoc(summaryRef, updateData);
       }
     } catch (error) {
       console.error('Failed to update monthly summary:', error);

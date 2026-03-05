@@ -33,8 +33,8 @@ import { formatCurrency } from '@/lib/utils';
 import Link from 'next/link';
 import { StatCard } from '@/components/dashboard/stat-card';
 import { RecentTransactions } from '@/components/dashboard/recent-transactions';
-import { AICategorizationCard } from '@/components/dashboard/ai-categorization-card';
 import { MonthlyBalanceChart } from '@/components/dashboard/monthly-balance-chart';
+import { CategorySpendingChart } from '@/components/dashboard/category-spending-chart';
 
 export default function DashboardPage() {
   const firestore = useFirestore();
@@ -134,6 +134,30 @@ export default function DashboardPage() {
     return { totalSaved, firstGoal, overallProgress };
   }, [goalsSummary, firstGoalArr]);
 
+  const categorySpendingData = useMemo(() => {
+    if (!monthlySummaries || !categories) return [];
+
+    const currentMonthSummary = monthlySummaries?.[0];
+    if (
+      !currentMonthSummary ||
+      currentMonthSummary.id !== format(new Date(), 'yyyy-MM')
+    ) {
+      return [];
+    }
+
+    return (currentMonthSummary.spendingByCategory || [])
+      .map((spending) => {
+        const category = categories.find((c) => c.id === spending.categoryId);
+        if (!category) return null;
+        return {
+          category: category.name,
+          amount: spending.amount,
+          fill: category.color,
+        };
+      })
+      .filter(Boolean) as { category: string; amount: number; fill: string }[];
+  }, [monthlySummaries, categories]);
+
   const isLoading =
     summariesLoading ||
     goalsSummaryLoading ||
@@ -151,7 +175,20 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <DashboardHeader />
+      <div className="flex items-center justify-between">
+        <DashboardHeader />
+        <Button
+          asChild
+          size="sm"
+          className="hidden rounded-full lg:flex"
+        >
+          <Link href="/add-transaction">
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Novo Lançamento
+          </Link>
+        </Button>
+      </div>
+
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="flex flex-col gap-6 lg:col-span-2">
           <Card>
@@ -160,15 +197,15 @@ export default function DashboardPage() {
                 title="Balanço"
                 value={formatCurrency(dashboardData.balance)}
               />
-              <div className="mx-6 h-[1px] bg-border md:hidden" />
-              <div className="hidden h-12 w-[1px] bg-border md:block" />
+              <div className="mx-6 hidden h-12 w-[1px] bg-border md:block" />
+              <div className="my-2 h-[1px] w-full bg-border md:hidden" />
               <StatCard
                 title="Receitas"
                 value={formatCurrency(dashboardData.totalIncome)}
                 className="text-primary"
               />
-              <div className="mx-6 h-[1px] bg-border md:hidden" />
-              <div className="hidden h-12 w-[1px] bg-border md:block" />
+              <div className="mx-6 hidden h-12 w-[1px] bg-border md:block" />
+              <div className="my-2 h-[1px] w-full bg-border md:hidden" />
               <StatCard
                 title="Despesas"
                 value={formatCurrency(dashboardData.totalExpense)}
@@ -181,7 +218,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex flex-col gap-6 lg:col-span-1">
-          <Button asChild size="sm" className="hidden w-full lg:flex">
+          <Button asChild size="sm" className="flex w-full lg:hidden">
             <Link href="/add-transaction">
               <PlusCircle className="mr-2 h-4 w-4" />
               Novo Lançamento
@@ -254,8 +291,7 @@ export default function DashboardPage() {
               </Button>
             </Card>
           )}
-
-          <AICategorizationCard />
+          <CategorySpendingChart data={categorySpendingData} />
         </div>
       </div>
     </div>
