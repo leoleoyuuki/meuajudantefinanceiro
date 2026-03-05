@@ -14,11 +14,10 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from '@/components/ui/chart';
-import { cn, formatCurrency } from '@/lib/utils';
+import { formatCurrency } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Label, Pie, PieChart, Sector, Cell } from 'recharts';
-import type { PieSectorDataItem } from 'recharts/types/polar/Pie';
+import { Label, Pie, PieChart, Cell } from 'recharts';
 
 type CategorySpendingChartProps = {
   data: {
@@ -32,10 +31,6 @@ export function CategorySpendingChart({ data }: CategorySpendingChartProps) {
   const chartData = React.useMemo(
     () => data.map((item) => ({ ...item, name: item.category })),
     [data]
-  );
-
-  const [activeIndex, setActiveIndex] = React.useState<number | undefined>(
-    undefined
   );
 
   const totalAmount = React.useMemo(() => {
@@ -79,19 +74,17 @@ export function CategorySpendingChart({ data }: CategorySpendingChartProps) {
     );
   }
 
-  const activeData = activeIndex !== undefined ? chartData[activeIndex] : null;
-
   return (
     <Card className="flex flex-col">
-      <CardHeader className="items-center pb-4">
+      <CardHeader className="items-start pb-4">
         <CardTitle>Gastos por Categoria</CardTitle>
         <CardDescription>{`Despesas de ${currentMonthName}`}</CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-1 p-0">
-        <div className="flex w-full flex-col items-center gap-4 md:flex-row">
+      <CardContent className="flex-1 pb-4">
+        <div className="grid h-full grid-cols-1 items-center gap-8 md:grid-cols-2">
           <ChartContainer
             config={chartConfig}
-            className="mx-auto aspect-square h-auto w-full max-w-[250px] md:w-3/5"
+            className="mx-auto aspect-square h-full w-full max-w-[250px]"
           >
             <PieChart>
               <ChartTooltip
@@ -104,15 +97,6 @@ export function CategorySpendingChart({ data }: CategorySpendingChartProps) {
                 nameKey="name"
                 innerRadius={60}
                 strokeWidth={5}
-                activeIndex={activeIndex}
-                onMouseEnter={(_, index) => setActiveIndex(index)}
-                onMouseLeave={() => setActiveIndex(undefined)}
-                activeShape={({
-                  outerRadius = 0,
-                  ...props
-                }: PieSectorDataItem) => (
-                  <Sector {...props} outerRadius={outerRadius + 8} />
-                )}
               >
                 {chartData.map((entry) => (
                   <Cell
@@ -124,13 +108,6 @@ export function CategorySpendingChart({ data }: CategorySpendingChartProps) {
                 <Label
                   content={({ viewBox }) => {
                     if (viewBox && 'cx' in viewBox && 'cy' in viewBox) {
-                      const labelText = activeData
-                        ? activeData.name
-                        : 'Despesas';
-                      const labelValue = activeData
-                        ? activeData.amount
-                        : totalAmount;
-
                       return (
                         <text
                           x={viewBox.cx}
@@ -140,17 +117,17 @@ export function CategorySpendingChart({ data }: CategorySpendingChartProps) {
                         >
                           <tspan
                             x={viewBox.cx}
-                            y={viewBox.cy - 4}
-                            className="fill-foreground text-lg font-bold"
+                            y={viewBox.cy - 10}
+                            className="fill-muted-foreground text-xs"
                           >
-                            {formatCurrency(labelValue)}
+                            Despesa Total
                           </tspan>
                           <tspan
                             x={viewBox.cx}
-                            y={(viewBox.cy || 0) + 16}
-                            className="fill-muted-foreground text-xs"
+                            y={(viewBox.cy || 0) + 12}
+                            className="fill-foreground text-xl font-bold"
                           >
-                            {labelText}
+                            {formatCurrency(totalAmount)}
                           </tspan>
                         </text>
                       );
@@ -161,40 +138,24 @@ export function CategorySpendingChart({ data }: CategorySpendingChartProps) {
             </PieChart>
           </ChartContainer>
 
-          <div className="flex w-full flex-col justify-center gap-2 border-t px-4 pt-4 text-sm md:w-2/5 md:border-l md:border-t-0 md:py-0 md:pr-4">
+          <div className="flex flex-col justify-center gap-4">
             {sortedChartData.map((item) => {
-              const originalIndex = chartData.findIndex(
-                (d) => d.category === item.category
-              );
+              const percentage =
+                totalAmount > 0 ? (item.amount / totalAmount) * 100 : 0;
               return (
-                <div
-                  key={item.category}
-                  className={cn(
-                    'flex cursor-pointer items-center justify-between rounded-lg p-2 transition-colors',
-                    activeIndex === originalIndex
-                      ? 'bg-muted'
-                      : 'hover:bg-muted/50'
-                  )}
-                  onMouseEnter={() => setActiveIndex(originalIndex)}
-                  onMouseLeave={() => setActiveIndex(undefined)}
-                >
-                  <div className="flex items-center gap-3">
+                <div key={item.category} className="grid gap-1">
+                  <div className="flex items-center gap-2">
                     <span
-                      className="h-3 w-3 shrink-0 rounded-full"
+                      className="h-2.5 w-2.5 shrink-0 rounded-full"
                       style={{ backgroundColor: item.fill }}
                     />
-                    <span
-                      className="flex-1 font-medium"
-                      title={item.category}
-                    >
-                      {item.category.length > 5
-                        ? `${item.category.substring(0, 5)}...`
-                        : item.category}
+                    <span className="text-sm text-muted-foreground">
+                      {item.category}
                     </span>
                   </div>
-                  <span className="font-semibold">
-                    {formatCurrency(item.amount)}
-                  </span>
+                  <p className="text-lg font-bold leading-none text-foreground">
+                    {percentage.toFixed(0)}%
+                  </p>
                 </div>
               );
             })}
