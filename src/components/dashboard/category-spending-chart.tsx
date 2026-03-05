@@ -146,7 +146,7 @@ export function CategorySpendingChart({ data }: CategorySpendingChartProps) {
                             style={{ backgroundColor: item.fill }} 
                           />
                           <div className="flex flex-col min-w-0">
-                            <span className="text-sm font-semibold truncate leading-tight">
+                            <span className="text-sm font-semibold leading-tight">
                               {item.category}
                             </span>
                             <span className="text-[11px] text-muted-foreground">
