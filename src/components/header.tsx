@@ -74,7 +74,7 @@ export function Header() {
               className="px-1 font-semibold text-foreground hover:text-primary hover:no-underline"
             >
               <Gift className="mr-2 size-4 text-primary" />
-              Indique e Ganhe
+              Indique Amigos
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-80">

@@ -126,7 +126,7 @@ export function MobileHeader() {
             <DialogTrigger asChild>
               <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
                 <Gift className="mr-2 h-4 w-4" />
-                <span>Indique e Ganhe</span>
+                <span>Indique Amigos</span>
               </DropdownMenuItem>
             </DialogTrigger>
             <DialogContent>
