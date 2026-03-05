@@ -160,17 +160,19 @@ export default function DashboardPage() {
                 title="Balanço"
                 value={formatCurrency(dashboardData.balance)}
               />
-              <div className="w-full border-b md:hidden" />
+              <div className="mx-6 border-b md:hidden" />
               <div className="hidden h-12 border-l md:block" />
               <StatCard
                 title="Receitas"
                 value={formatCurrency(dashboardData.totalIncome)}
+                className="text-primary"
               />
-              <div className="w-full border-b md:hidden" />
+              <div className="mx-6 border-b md:hidden" />
               <div className="hidden h-12 border-l md:block" />
               <StatCard
                 title="Despesas"
                 value={formatCurrency(dashboardData.totalExpenses)}
+                className="text-destructive"
               />
             </CardContent>
           </Card>

@@ -18,7 +18,7 @@ export function StatCard({ title, value, className }: StatCardProps) {
       </div>
       <p
         className={cn(
-          'font-headline text-2xl font-semibold text-primary',
+          'font-headline text-2xl font-semibold text-foreground',
           className
         )}
       >

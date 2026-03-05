@@ -59,7 +59,7 @@ export function RecentTransactions({ transactions }: RecentTransactionsProps) {
                     className={cn(
                       'font-bold',
                       transaction.type === 'income'
-                        ? 'text-green-600 dark:text-green-400'
+                        ? 'text-primary'
                         : 'text-destructive'
                     )}
                   >
