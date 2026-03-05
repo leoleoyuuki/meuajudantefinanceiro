@@ -21,30 +21,45 @@ type CategorySpendingChartProps = {
   }[];
 };
 
-const chartConfig = {
-  amount: {
-    label: 'Amount',
-  },
-} satisfies ChartConfig;
-
 export function CategorySpendingChart({ data }: CategorySpendingChartProps) {
   const chartData = data.map((item) => ({ ...item, name: item.category }));
 
-  const totalAmount = React.useMemo(() => {
-    return data.reduce((acc, curr) => acc + curr.amount, 0);
+  const chartConfig = React.useMemo(() => {
+    if (!data) {
+      return {
+        amount: {
+          label: 'Amount',
+        },
+      } satisfies ChartConfig;
+    }
+    const config: ChartConfig = data.reduce((acc, item) => {
+      acc[item.category] = {
+        label: item.category,
+        color: item.fill,
+      };
+      return acc;
+    }, {} as ChartConfig);
+
+    config.amount = {
+      label: 'Amount',
+    };
+
+    return config;
   }, [data]);
-  
+
   if (data.length === 0) {
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Gastos por Categoria</CardTitle>
-            </CardHeader>
-            <CardContent className="flex h-60 items-center justify-center">
-                <p className="text-muted-foreground">Nenhuma despesa registrada este mês.</p>
-            </CardContent>
-        </Card>
-    )
+      <Card>
+        <CardHeader>
+          <CardTitle>Gastos por Categoria</CardTitle>
+        </CardHeader>
+        <CardContent className="flex h-60 items-center justify-center">
+          <p className="text-muted-foreground">
+            Nenhuma despesa registrada este mês.
+          </p>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
@@ -78,10 +93,13 @@ export function CategorySpendingChart({ data }: CategorySpendingChartProps) {
               innerRadius={60}
               strokeWidth={5}
             >
-                <Cell key="add-slice-label" className="hidden" />
-                {chartData.map((entry) => (
-                    <Cell key={entry.category} fill={entry.fill} className="focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"/>
-                ))}
+              {chartData.map((entry) => (
+                <Cell
+                  key={`cell-${entry.category}`}
+                  fill={entry.fill}
+                  className="focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                />
+              ))}
             </Pie>
             <ChartLegend
               content={<ChartLegendContent nameKey="category" />}
