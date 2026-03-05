@@ -107,7 +107,7 @@ export default function DashboardPage() {
       !currentMonthSummary ||
       currentMonthSummary.id !== format(new Date(), 'yyyy-MM')
     ) {
-      return { totalIncome: 0, totalExpenses: 0, balance: 0 };
+      return { totalIncome: 0, totalExpense: 0, balance: 0 };
     }
     return {
       totalIncome: currentMonthSummary.totalIncome,
@@ -143,7 +143,7 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-[80vh] items-center justify-center">
+      <div className="h-[80vh] flex items-center justify-center">
         <Loader2 className="size-8 animate-spin" />
       </div>
     );
@@ -160,18 +160,18 @@ export default function DashboardPage() {
                 title="Balanço"
                 value={formatCurrency(dashboardData.balance)}
               />
-              <div className="mx-6 border-b md:hidden" />
-              <div className="hidden h-12 border-l md:block" />
+              <div className="mx-6 h-[1px] bg-border md:hidden" />
+              <div className="hidden h-12 w-[1px] bg-border md:block" />
               <StatCard
                 title="Receitas"
                 value={formatCurrency(dashboardData.totalIncome)}
                 className="text-primary"
               />
-              <div className="mx-6 border-b md:hidden" />
-              <div className="hidden h-12 border-l md:block" />
+              <div className="mx-6 h-[1px] bg-border md:hidden" />
+              <div className="hidden h-12 w-[1px] bg-border md:block" />
               <StatCard
                 title="Despesas"
-                value={formatCurrency(dashboardData.totalExpenses)}
+                value={formatCurrency(dashboardData.totalExpense)}
                 className="text-destructive"
               />
             </CardContent>
