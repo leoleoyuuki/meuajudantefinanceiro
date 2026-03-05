@@ -111,7 +111,7 @@ export default function DashboardPage() {
     }
     return {
       totalIncome: currentMonthSummary.totalIncome,
-      totalExpenses: currentMonthSummary.totalExpense,
+      totalExpense: currentMonthSummary.totalExpense,
       balance: currentMonthSummary.netBalance,
     };
   }, [monthlySummaries]);
@@ -155,15 +155,19 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="flex flex-col gap-6 lg:col-span-2">
           <Card>
-            <CardContent className="flex flex-col divide-y divide-border p-0 md:flex-row md:divide-x md:divide-y-0">
+            <CardContent className="flex flex-col p-0 md:flex-row md:items-center">
               <StatCard
                 title="Balanço"
                 value={formatCurrency(dashboardData.balance)}
               />
+              <div className="w-full border-b md:hidden" />
+              <div className="hidden h-12 border-l md:block" />
               <StatCard
                 title="Receitas"
                 value={formatCurrency(dashboardData.totalIncome)}
               />
+              <div className="w-full border-b md:hidden" />
+              <div className="hidden h-12 border-l md:block" />
               <StatCard
                 title="Despesas"
                 value={formatCurrency(dashboardData.totalExpenses)}
