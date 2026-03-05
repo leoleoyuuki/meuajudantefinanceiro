@@ -9,6 +9,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { AppSidebar } from './sidebar';
 import { SidebarProvider } from './ui/sidebar';
 import { Header } from './header';
+import { MobileHeader } from './mobile-header';
 
 export default function AuthWrapper({
   children,
@@ -42,7 +43,8 @@ export default function AuthWrapper({
       return (
         <div className="relative flex min-h-screen w-full flex-col bg-secondary/50">
           <div className="container mx-auto max-w-lg flex-1 bg-background shadow-lg">
-            <main className="pb-28">{children}</main>
+            <MobileHeader />
+            <main className="p-4 pb-28">{children}</main>
           </div>
           <BottomNav />
         </div>

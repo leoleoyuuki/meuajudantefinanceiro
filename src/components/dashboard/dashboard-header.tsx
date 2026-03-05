@@ -19,7 +19,7 @@ export function DashboardHeader() {
   });
 
   return (
-    <div>
+    <div className="hidden md:block">
       <p className="text-sm text-primary font-semibold">Página Inicial</p>
       <h1 className="font-headline text-3xl font-bold text-foreground">
         Olá, {greetingName}.
