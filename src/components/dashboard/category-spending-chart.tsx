@@ -25,24 +25,13 @@ export function CategorySpendingChart({ data }: CategorySpendingChartProps) {
   const chartData = data.map((item) => ({ ...item, name: item.category }));
 
   const chartConfig = React.useMemo(() => {
-    if (!data) {
-      return {
-        amount: {
-          label: 'Amount',
-        },
-      } satisfies ChartConfig;
-    }
-    const config: ChartConfig = data.reduce((acc, item) => {
+    const config: ChartConfig = (data || []).reduce((acc, item) => {
       acc[item.category] = {
         label: item.category,
         color: item.fill,
       };
       return acc;
     }, {} as ChartConfig);
-
-    config.amount = {
-      label: 'Amount',
-    };
 
     return config;
   }, [data]);
@@ -70,7 +59,7 @@ export function CategorySpendingChart({ data }: CategorySpendingChartProps) {
       <CardContent className="flex justify-center">
         <ChartContainer
           config={chartConfig}
-          className="mx-auto aspect-square max-h-[250px]"
+          className="mx-auto aspect-square h-[250px]"
         >
           <PieChart>
             <ChartTooltip
