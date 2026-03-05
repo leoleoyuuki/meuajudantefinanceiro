@@ -12,7 +12,6 @@ import {
   Lightbulb,
   CheckCircle2,
   AlertCircle,
-  Info,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
@@ -47,10 +46,8 @@ import { CategorySpendingChart } from '@/components/dashboard/category-spending-
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Button } from '@/components/ui/button';
 
 // Based on common financial advice (50/30/20 rule adjusted)
 const idealPercentages: { [key: string]: number } = {
@@ -289,46 +286,43 @@ export default function TransactionsPage() {
         <CardHeader>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <CardTitle>Análise de Despesas</CardTitle>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 text-muted-foreground"
-                      >
-                        <Info className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <div className="p-2">
-                        <h4 className="mb-2 font-semibold">
-                          Porcentagens Ideais
-                        </h4>
-                        <ul className="space-y-1 text-xs">
-                          {Object.entries(idealPercentages).map(
-                            ([category, percentage]) => (
-                              <li
-                                key={category}
-                                className="flex justify-between gap-4"
-                              >
-                                <span className="text-muted-foreground">
-                                  {category}
-                                </span>
-                                <span className="font-bold">{percentage}%</span>
-                              </li>
-                            )
-                          )}
-                        </ul>
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
+              <CardTitle>Análise de Despesas</CardTitle>
               <CardDescription>
-                Compare seus gastos com as porcentagens ideais de despesa.
+                Compare seus gastos com as{' '}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="cursor-help font-semibold text-primary underline decoration-dotted underline-offset-2">
+                      porcentagens ideais
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <div className="space-y-2 p-1">
+                      <h4 className="font-semibold">
+                        Regra 50-30-20: Orçamento Ideal
+                      </h4>
+                      <p className="text-xs text-muted-foreground">
+                        Baseado na sua renda, seus gastos são comparados com
+                        estas sugestões.
+                      </p>
+                      <ul className="space-y-1.5 text-xs">
+                        {Object.entries(idealPercentages).map(
+                          ([category, percentage]) => (
+                            <li
+                              key={category}
+                              className="flex justify-between gap-4"
+                            >
+                              <span className="font-medium text-muted-foreground">
+                                {category}
+                              </span>
+                              <span className="font-bold">{percentage}%</span>
+                            </li>
+                          )
+                        )}
+                      </ul>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+                .
               </CardDescription>
             </div>
             {summaries && summaries.length > 0 && (
@@ -379,10 +373,9 @@ export default function TransactionsPage() {
                         key={item.categoryName}
                         value={`item-${index}`}
                         className={cn(
-                          'border-b',
                           index === analysis.analysis.length - 1
                             ? 'border-b-0'
-                            : ''
+                            : 'border-b'
                         )}
                       >
                         <AccordionTrigger className="px-4 py-3 text-sm hover:no-underline">
@@ -396,7 +389,7 @@ export default function TransactionsPage() {
                           </div>
                         </AccordionTrigger>
                         <AccordionContent
-                          className={cn('p-4 pt-0', status.bgColor)}
+                          className={cn('px-4 pb-4 pt-0', status.bgColor)}
                         >
                           <div className="space-y-2 text-sm">
                             <p>{item.comment}</p>
