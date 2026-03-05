@@ -46,13 +46,13 @@ import { CategorySpendingChart } from '@/components/dashboard/category-spending-
 
 // Based on common financial advice (50/30/20 rule adjusted)
 const idealPercentages: { [key: string]: number } = {
-  Moradia: 35,
+  Moradia: 30,
   Transporte: 15,
   Alimentação: 15,
-  Saúde: 5,
+  Saúde: 10,
   Lazer: 10,
   Educação: 5,
-  Investimentos: 15,
+  Investimentos: 20,
   Compras: 5,
   Assinaturas: 5,
   Outros: 5,
