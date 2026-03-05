@@ -43,19 +43,23 @@ export function CategorySpendingChart({ data }: CategorySpendingChartProps) {
   }, [data]);
 
   const chartConfig = React.useMemo(() => {
-    const config: ChartConfig = (data || []).reduce((acc, item) => {
+    return (data || []).reduce((acc, item) => {
       acc[item.category] = {
         label: item.category,
         color: item.fill,
       };
       return acc;
     }, {} as ChartConfig);
-    return config;
   }, [data]);
 
   const currentMonthName = React.useMemo(() => {
     return format(new Date(), 'MMMM', { locale: ptBR });
   }, []);
+
+  const sortedChartData = React.useMemo(
+    () => [...chartData].sort((a, b) => b.amount - a.amount),
+    [chartData]
+  );
 
   if (data.length === 0) {
     return (
@@ -74,20 +78,20 @@ export function CategorySpendingChart({ data }: CategorySpendingChartProps) {
       </Card>
     );
   }
-  
+
   const activeData = activeIndex !== undefined ? chartData[activeIndex] : null;
 
   return (
     <Card className="flex flex-col">
-      <CardHeader className="pb-4">
+      <CardHeader className="items-center pb-4">
         <CardTitle>Gastos por Categoria</CardTitle>
         <CardDescription>{`Despesas de ${currentMonthName}`}</CardDescription>
       </CardHeader>
-      <CardContent className="flex-1 p-0">
-        <div className="grid grid-cols-1 items-center gap-4 md:grid-cols-2">
+      <CardContent className="flex flex-1 p-0">
+        <div className="flex w-full flex-col items-center gap-4 md:flex-row">
           <ChartContainer
             config={chartConfig}
-            className="mx-auto aspect-square h-[250px]"
+            className="mx-auto aspect-square h-auto w-full max-w-[250px] md:w-3/5"
           >
             <PieChart>
               <ChartTooltip
@@ -136,8 +140,8 @@ export function CategorySpendingChart({ data }: CategorySpendingChartProps) {
                         >
                           <tspan
                             x={viewBox.cx}
-                            y={viewBox.cy}
-                            className="fill-foreground text-xl font-bold"
+                            y={viewBox.cy - 4}
+                            className="fill-foreground text-lg font-bold"
                           >
                             {formatCurrency(labelValue)}
                           </tspan>
@@ -157,33 +161,43 @@ export function CategorySpendingChart({ data }: CategorySpendingChartProps) {
             </PieChart>
           </ChartContainer>
 
-          <div className="flex flex-col justify-center gap-2 border-t px-4 pt-4 text-sm md:border-l md:border-t-0 md:py-0 md:pr-4">
-            {chartData
-              .sort((a, b) => b.amount - a.amount)
-              .map((item, index) => (
-              <div
-                key={item.category}
-                className={cn(
-                  'flex cursor-pointer items-center justify-between rounded-lg p-2 transition-colors',
-                  activeIndex === index ? 'bg-muted' : 'hover:bg-muted/50'
-                )}
-                onMouseEnter={() => setActiveIndex(index)}
-                onMouseLeave={() => setActiveIndex(undefined)}
-              >
-                <div className="flex items-center gap-3">
-                  <span
-                    className="h-3 w-3 shrink-0 rounded-full"
-                    style={{ backgroundColor: item.fill }}
-                  />
-                  <span className="flex-1 truncate font-medium">
-                    {item.category}
+          <div className="flex w-full flex-col justify-center gap-2 border-t px-4 pt-4 text-sm md:w-2/5 md:border-l md:border-t-0 md:py-0 md:pr-4">
+            {sortedChartData.map((item) => {
+              const originalIndex = chartData.findIndex(
+                (d) => d.category === item.category
+              );
+              return (
+                <div
+                  key={item.category}
+                  className={cn(
+                    'flex cursor-pointer items-center justify-between rounded-lg p-2 transition-colors',
+                    activeIndex === originalIndex
+                      ? 'bg-muted'
+                      : 'hover:bg-muted/50'
+                  )}
+                  onMouseEnter={() => setActiveIndex(originalIndex)}
+                  onMouseLeave={() => setActiveIndex(undefined)}
+                >
+                  <div className="flex items-center gap-3">
+                    <span
+                      className="h-3 w-3 shrink-0 rounded-full"
+                      style={{ backgroundColor: item.fill }}
+                    />
+                    <span
+                      className="flex-1 font-medium"
+                      title={item.category}
+                    >
+                      {item.category.length > 5
+                        ? `${item.category.substring(0, 5)}...`
+                        : item.category}
+                    </span>
+                  </div>
+                  <span className="font-semibold">
+                    {formatCurrency(item.amount)}
                   </span>
                 </div>
-                <span className="font-semibold">
-                  {formatCurrency(item.amount)}
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </CardContent>
