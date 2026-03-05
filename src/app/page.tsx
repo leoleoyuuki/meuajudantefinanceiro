@@ -159,17 +159,14 @@ export default function DashboardPage() {
               <StatCard
                 title="Balanço"
                 value={formatCurrency(dashboardData.balance)}
-                className="text-primary"
               />
               <StatCard
                 title="Receitas"
                 value={formatCurrency(dashboardData.totalIncome)}
-                className="text-green-600"
               />
               <StatCard
                 title="Despesas"
                 value={formatCurrency(dashboardData.totalExpenses)}
-                className="text-destructive"
               />
             </CardContent>
           </Card>
