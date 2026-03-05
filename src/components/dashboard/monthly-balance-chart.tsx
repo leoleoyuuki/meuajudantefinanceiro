@@ -7,11 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from '@/components/ui/chart';
+import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
 import { formatCurrency } from '@/lib/utils';
 import type { MonthlySummary } from '@/lib/types';
 import { format } from 'date-fns';
@@ -31,6 +27,53 @@ const chartConfig = {
     label: 'Despesas',
     color: 'hsl(var(--foreground))',
   },
+};
+
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    const incomeData = payload.find((p: any) => p.dataKey === 'totalIncome');
+    const expenseData = payload.find((p: any) => p.dataKey === 'totalExpense');
+
+    return (
+      <div className="min-w-[10rem] rounded-lg border bg-background/90 p-3 shadow-lg backdrop-blur-sm">
+        <p className="mb-2 text-center font-bold capitalize text-foreground">
+          {label}
+        </p>
+        <div className="space-y-1.5">
+          {incomeData && (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span
+                  className="size-2.5 rounded-full"
+                  style={{ backgroundColor: incomeData.color }}
+                />
+                <p className="text-sm text-muted-foreground">Receitas</p>
+              </div>
+              <p className="text-sm font-semibold text-foreground">
+                {formatCurrency(incomeData.value)}
+              </p>
+            </div>
+          )}
+          {expenseData && (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span
+                  className="size-2.5 rounded-full"
+                  style={{ backgroundColor: expenseData.color }}
+                />
+                <p className="text-sm text-muted-foreground">Despesas</p>
+              </div>
+              <p className="text-sm font-semibold text-foreground">
+                {formatCurrency(expenseData.value)}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return null;
 };
 
 export function MonthlyBalanceChart({ data }: MonthlyBalanceChartProps) {
@@ -148,21 +191,7 @@ export function MonthlyBalanceChart({ data }: MonthlyBalanceChartProps) {
                 fontSize={12}
                 tick={{ fill: 'hsl(var(--muted-foreground))' }}
               />
-              <ChartTooltip
-                cursor={false}
-                content={
-                  <ChartTooltipContent
-                    indicator="dot"
-                    formatter={(value, name) => {
-                      if (name === 'totalIncome')
-                        return [formatCurrency(Number(value)), 'Receitas'];
-                      if (name === 'totalExpense')
-                        return [formatCurrency(Number(value)), 'Despesas'];
-                      return [value];
-                    }}
-                  />
-                }
-              />
+              <ChartTooltip cursor={false} content={<CustomTooltip />} />
               <Area
                 dataKey="totalExpense"
                 type="monotone"
