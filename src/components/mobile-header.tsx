@@ -12,7 +12,14 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from './ui/avatar';
-import { LogOut, User, Settings } from 'lucide-react';
+import {
+  LogOut,
+  User,
+  Settings,
+  Crown,
+  Gift,
+  LifeBuoy,
+} from 'lucide-react';
 import Link from 'next/link';
 
 export function MobileHeader() {
@@ -42,21 +49,25 @@ export function MobileHeader() {
   return (
     <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b bg-background/95 px-4 backdrop-blur-sm">
       <h1 className="font-headline text-xl font-bold">{getPageTitle()}</h1>
-      
+
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background">
             <Avatar className="size-9">
               <AvatarFallback className="bg-secondary text-sm font-semibold">
-                {user?.displayName
-                  ? user.displayName.length > 1
-                    ? `${user.displayName
-                        .charAt(0)
-                        .toUpperCase()}${user.displayName
-                        .charAt(1)
-                        .toLowerCase()}`
-                    : user.displayName.toUpperCase()
-                  : <User className="size-4" />}
+                {user?.displayName ? (
+                  user.displayName.length > 1 ? (
+                    `${user.displayName
+                      .charAt(0)
+                      .toUpperCase()}${user.displayName
+                      .charAt(1)
+                      .toLowerCase()}`
+                  ) : (
+                    user.displayName.toUpperCase()
+                  )
+                ) : (
+                  <User className="size-4" />
+                )}
               </AvatarFallback>
             </Avatar>
           </button>
@@ -69,7 +80,26 @@ export function MobileHeader() {
             </p>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-           <DropdownMenuItem asChild>
+          <DropdownMenuItem asChild>
+            <Link href="#">
+              <Crown className="mr-2 h-4 w-4" />
+              <span>Premium</span>
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href="#">
+              <Gift className="mr-2 h-4 w-4" />
+              <span>Indique e Ganhe</span>
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href="#">
+              <LifeBuoy className="mr-2 h-4 w-4" />
+              <span>Ajuda</span>
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem asChild>
             <Link href="#">
               <Settings className="mr-2 h-4 w-4" />
               <span>Configurações</span>
