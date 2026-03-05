@@ -18,7 +18,7 @@ import {
 import { formatCurrency } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Label, Pie, PieChart, Sector } from 'recharts';
+import { Label, Pie, PieChart, Sector, Cell } from 'recharts';
 import type { PieSectorDataItem } from 'recharts/types/polar/Pie';
 
 type CategorySpendingChartProps = {
@@ -66,7 +66,7 @@ export function CategorySpendingChart({ data }: CategorySpendingChartProps) {
             {`Nenhuma despesa registrada em ${currentMonthName}`}
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex h-[250px] items-center justify-center pb-0">
+        <CardContent className="flex h-[300px] items-center justify-center pb-0">
           <p className="text-sm text-muted-foreground">
             Sem dados para exibir.
           </p>
@@ -87,7 +87,7 @@ export function CategorySpendingChart({ data }: CategorySpendingChartProps) {
       <CardContent className="flex-1 pb-0">
         <ChartContainer
           config={chartConfig}
-          className="mx-auto aspect-square max-h-[250px]"
+          className="mx-auto aspect-square h-[300px]"
         >
           <PieChart>
             <ChartTooltip
@@ -98,7 +98,7 @@ export function CategorySpendingChart({ data }: CategorySpendingChartProps) {
               data={chartData}
               dataKey="amount"
               nameKey="name"
-              innerRadius={60}
+              innerRadius={80}
               strokeWidth={5}
               activeIndex={activeIndex}
               onMouseEnter={(_, index) => setActiveIndex(index)}
@@ -110,6 +110,13 @@ export function CategorySpendingChart({ data }: CategorySpendingChartProps) {
                 <Sector {...props} outerRadius={outerRadius + 10} />
               )}
             >
+              {chartData.map((entry) => (
+                <Cell
+                  key={`cell-${entry.name}`}
+                  fill={entry.fill}
+                  className="focus:outline-none"
+                />
+              ))}
               <Label
                 content={({ viewBox }) => {
                   if (viewBox && 'cx' in viewBox && 'cy' in viewBox) {
