@@ -43,8 +43,6 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { CategorySpendingChart } from '@/components/dashboard/category-spending-chart';
-import { getExpenseAnalysis } from '@/app/actions';
-import type { SuggestExpenseAnalysisOutput } from '@/ai/flows/suggest-expense-analysis';
 
 // Based on common financial advice (50/30/20 rule adjusted)
 const idealPercentages: { [key: string]: number } = {
@@ -96,8 +94,6 @@ export default function TransactionsPage() {
   const firestore = useFirestore();
   const { user } = useUser();
   const [searchTerm, setSearchTerm] = useState('');
-  const [analysis, setAnalysis] = useState<SuggestExpenseAnalysisOutput | null>(null);
-  const [isAnalysisLoading, setIsAnalysisLoading] = useState(false);
 
   const summariesQuery = useMemoFirebase(
     () =>
@@ -160,32 +156,86 @@ export default function TransactionsPage() {
       .filter(Boolean) as { category: string; amount: number; fill: string }[];
   }, [selectedSummary, categories]);
 
-  useEffect(() => {
-    if (!selectedSummary) {
-      setAnalysis(null);
-      return;
-    }
-    const runAnalysis = async () => {
-      setIsAnalysisLoading(true);
-      setAnalysis(null);
-      try {
-        const spendingByCategoryForAI = categorySpendingData.map((item) => ({
+  const analysis = useMemo(() => {
+    if (!selectedSummary) return null;
+
+    if (selectedSummary.totalIncome === 0) {
+      return {
+        analysis: categorySpendingData.map((item) => ({
           categoryName: item.category,
           spentAmount: item.amount,
-          idealPercentage: idealPercentages[item.category] || 5,
-        }));
-        const result = await getExpenseAnalysis({
-          totalIncome: selectedSummary.totalIncome,
-          spendingByCategory: spendingByCategoryForAI,
-        });
-        setAnalysis(result);
-      } catch (error) {
-        console.error('Error fetching expense analysis:', error);
-      } finally {
-        setIsAnalysisLoading(false);
+          idealAmount: 0,
+          comment: `Gasto de ${formatCurrency(
+            item.amount
+          )}. Análise indisponível sem registro de renda.`,
+          status: 'good' as const,
+        })),
+        summary:
+          'Não há renda registrada para este mês, então não é possível fazer uma análise. Adicione suas receitas para começar!',
+      };
+    }
+
+    const analysisItems = categorySpendingData.map((item) => {
+      const idealPercentage = idealPercentages[item.category] || 5;
+      const idealAmount = selectedSummary.totalIncome * (idealPercentage / 100);
+      const spentAmount = item.amount;
+      const ratio =
+        idealAmount > 0 ? spentAmount / idealAmount : spentAmount > 0 ? Infinity : 0;
+
+      let status: 'good' | 'warning' | 'over';
+      let comment: string;
+
+      if (ratio <= 1.05) {
+        status = 'good';
+        comment = `Ótimo! Seus gastos com ${item.category} estão dentro do esperado.`;
+      } else if (ratio <= 1.20) {
+        status = 'warning';
+        comment = `Atenção: seus gastos com ${item.category} estão um pouco acima do ideal.`;
+      } else {
+        status = 'over';
+        comment = `Cuidado! Seus gastos com ${item.category} estão bem acima do ideal.`;
       }
+
+      if (idealAmount === 0 && spentAmount > 0) {
+        comment = `Esta categoria não tem um gasto ideal definido, mas você gastou ${formatCurrency(
+          spentAmount
+        )}.`;
+      }
+
+      return {
+        categoryName: item.category,
+        spentAmount,
+        idealAmount,
+        comment,
+        status,
+      };
+    });
+
+    const overspentCategories = analysisItems.filter((i) => i.status === 'over');
+    const overspentNames = overspentCategories.map((c) => c.categoryName);
+    let summary: string;
+
+    if (overspentNames.length > 1) {
+      const last = overspentNames.pop();
+      summary = `Você está gastando muito em ${overspentNames.join(
+        ', '
+      )} e ${last}. É um bom ponto de partida para economizar!`;
+    } else if (overspentNames.length === 1) {
+      summary = `Você está gastando muito em ${overspentNames[0]}. É um bom ponto de partida para economizar!`;
+    } else if (analysisItems.some((i) => i.status === 'warning')) {
+      summary =
+        'Você está quase lá! Alguns gastos estão um pouco acima do ideal, mas com pequenos ajustes você equilibra as contas.';
+    } else if (analysisItems.length > 0) {
+      summary =
+        'Parabéns! Seus gastos estão bem distribuídos e dentro do planejado. Continue assim!';
+    } else {
+      summary = 'Nenhuma despesa registrada para análise neste mês.';
+    }
+
+    return {
+      analysis: analysisItems,
+      summary,
     };
-    runAnalysis();
   }, [selectedSummary, categorySpendingData]);
 
   const transactionsForMonth = useMemo(() => {
@@ -232,7 +282,7 @@ export default function TransactionsPage() {
             <div className="flex-1">
               <CardTitle>Análise de Despesas</CardTitle>
               <CardDescription>
-                Veja seus gastos por categoria e receba dicas da nossa IA.
+                Compare seus gastos com as porcentagens ideais de despesa.
               </CardDescription>
             </div>
             {summaries && summaries.length > 0 && (
@@ -260,13 +310,7 @@ export default function TransactionsPage() {
               <div className="flex items-start gap-3 rounded-lg border bg-accent/50 p-4">
                 <Lightbulb className="mt-1 size-5 shrink-0 text-primary" />
                 <div>
-                  <h3 className="font-semibold">Análise da IA</h3>
-                  {isAnalysisLoading && (
-                    <div className="flex items-center gap-2 pt-2 text-sm text-muted-foreground">
-                      <Loader2 className="size-4 animate-spin" />
-                      <span>Analisando seus gastos...</span>
-                    </div>
-                  )}
+                  <h3 className="font-semibold">Análise de Gastos</h3>
                   {analysis && (
                     <p className="pt-1 text-sm text-muted-foreground">
                       {analysis.summary}
@@ -288,28 +332,45 @@ export default function TransactionsPage() {
                       <AccordionItem
                         key={item.categoryName}
                         value={`item-${index}`}
-                        className={index === analysis.analysis.length - 1 ? 'border-b-0' : ''}
+                        className={
+                          index === analysis.analysis.length - 1
+                            ? 'border-b-0'
+                            : ''
+                        }
                       >
                         <AccordionTrigger className="py-3 text-sm hover:no-underline">
                           <div className="flex items-center gap-3">
-                            <Icon className={cn('size-5 shrink-0', status.color)} />
+                            <Icon
+                              className={cn('size-5 shrink-0', status.color)}
+                            />
                             <span className="font-semibold">
                               {item.categoryName}
                             </span>
                           </div>
                         </AccordionTrigger>
                         <AccordionContent
-                          className={cn('rounded-b-lg p-3 -mx-4 -mb-3', status.bgColor)}
+                          className={cn(
+                            'rounded-b-lg p-3 -mx-4 -mb-3',
+                            status.bgColor
+                          )}
                         >
                           <div className="space-y-2 text-sm">
                             <p>{item.comment}</p>
                             <div className="flex justify-between rounded-md bg-background/50 p-2 text-xs">
-                              <span className="text-muted-foreground">Gasto</span>
-                              <span className="font-semibold">{formatCurrency(item.spentAmount)}</span>
+                              <span className="text-muted-foreground">
+                                Gasto
+                              </span>
+                              <span className="font-semibold">
+                                {formatCurrency(item.spentAmount)}
+                              </span>
                             </div>
                             <div className="flex justify-between rounded-md bg-background/50 p-2 text-xs">
-                              <span className="text-muted-foreground">Ideal</span>
-                              <span className="font-semibold">{formatCurrency(item.idealAmount)}</span>
+                              <span className="text-muted-foreground">
+                                Ideal
+                              </span>
+                              <span className="font-semibold">
+                                {formatCurrency(item.idealAmount)}
+                              </span>
                             </div>
                           </div>
                         </AccordionContent>
@@ -380,11 +441,13 @@ export default function TransactionsPage() {
                                 />
                               )}
                             </div>
-                            <div className='flex flex-col'>
-                                <span className="font-medium">
+                            <div className="flex flex-col">
+                              <span className="font-medium">
                                 {transaction.description}
-                                </span>
-                                <span className='text-xs text-muted-foreground'>{transaction.category?.name}</span>
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {transaction.category?.name}
+                              </span>
                             </div>
                           </div>
                           <span
