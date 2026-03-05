@@ -34,8 +34,7 @@ export function MobileHeader() {
   };
 
   const getPageTitle = () => {
-    const firstName = user?.displayName?.split(' ')[0] || 'Usuário';
-    if (pathname === '/') return `Olá, ${firstName}`;
+    if (pathname === '/') return 'Início';
     if (pathname.startsWith('/transactions')) return 'Extrato';
     if (pathname.startsWith('/add-transaction')) return 'Nova Transação';
     if (pathname.startsWith('/goals/add')) return 'Nova Meta';

@@ -19,12 +19,14 @@ export function DashboardHeader() {
   });
 
   return (
-    <div className="hidden md:block">
-      <p className="text-sm text-primary font-semibold">Página Inicial</p>
-      <h1 className="font-headline text-3xl font-bold text-foreground">
+    <div>
+      <p className="hidden text-sm font-semibold text-primary md:block">
+        Página Inicial
+      </p>
+      <h1 className="font-headline text-2xl font-bold text-foreground md:text-3xl">
         Olá, {greetingName}.
       </h1>
-      <p className="text-muted-foreground capitalize">{today}</p>
+      <p className="hidden capitalize text-muted-foreground md:block">{today}</p>
     </div>
   );
 }
