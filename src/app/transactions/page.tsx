@@ -52,6 +52,7 @@ const idealPercentages: { [key: string]: number } = {
   Saúde: 5,
   Lazer: 10,
   Educação: 5,
+  Investimentos: 15,
   Compras: 5,
   Assinaturas: 5,
   Outros: 5,
