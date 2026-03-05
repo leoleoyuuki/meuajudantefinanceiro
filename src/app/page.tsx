@@ -213,7 +213,7 @@ export default function DashboardPage() {
               <StatCard
                 title="Valor Investido"
                 value={formatCurrency(dashboardData.invested)}
-                className="text-[hsl(var(--chart-1))]"
+                className="text-chart-1"
               />
             </CardContent>
           </Card>
