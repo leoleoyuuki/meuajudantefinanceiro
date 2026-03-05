@@ -194,22 +194,22 @@ export default function DashboardPage() {
                 value={formatCurrency(finalBalance)}
                 className={cn(finalBalance < 0 && 'text-destructive')}
               />
-              <div className="mx-4 hidden h-12 w-[1px] bg-border md:block" />
-              <div className="my-2 h-[1px] w-full bg-border md:hidden" />
+              <div className="mx-2 hidden h-10 w-[1px] bg-border md:block" />
+              <div className="my-1 h-[1px] w-full bg-border md:hidden" />
               <StatCard
                 title="Receitas"
                 value={formatCurrency(dashboardData.totalIncome)}
                 className="text-primary"
               />
-              <div className="mx-4 hidden h-12 w-[1px] bg-border md:block" />
-              <div className="my-2 h-[1px] w-full bg-border md:hidden" />
+              <div className="mx-2 hidden h-10 w-[1px] bg-border md:block" />
+              <div className="my-1 h-[1px] w-full bg-border md:hidden" />
               <StatCard
                 title="Despesas"
                 value={formatCurrency(dashboardData.totalExpense)}
                 className="text-destructive"
               />
-              <div className="mx-4 hidden h-12 w-[1px] bg-border md:block" />
-              <div className="my-2 h-[1px] w-full bg-border md:hidden" />
+              <div className="mx-2 hidden h-10 w-[1px] bg-border md:block" />
+              <div className="my-1 h-[1px] w-full bg-border md:hidden" />
               <StatCard
                 title="Valor Investido"
                 value={formatCurrency(dashboardData.invested)}
@@ -222,13 +222,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex flex-col gap-6 lg:col-span-1">
-          <Button asChild size="sm" className="flex w-full md:hidden">
-            <Link href="/add-transaction">
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Novo Lançamento
-            </Link>
-          </Button>
-          <Button asChild className="hidden w-full md:flex">
+          <Button asChild className="hidden w-full lg:flex">
             <Link href="/add-transaction">
               <PlusCircle className="mr-2 h-4 w-4" />
               Novo Lançamento
@@ -301,6 +295,15 @@ export default function DashboardPage() {
           <CategorySpendingChart data={categorySpendingData} />
         </div>
       </div>
+
+      <Link href="/add-transaction">
+        <Button
+          className="fixed bottom-6 right-6 z-50 hidden h-14 w-14 items-center justify-center rounded-full shadow-lg md:flex lg:hidden"
+        >
+          <PlusCircle className="h-7 w-7" />
+          <span className="sr-only">Novo Lançamento</span>
+        </Button>
+      </Link>
     </div>
   );
 }
