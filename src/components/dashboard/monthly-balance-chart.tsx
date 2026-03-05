@@ -1,5 +1,9 @@
 'use client';
-
+import {
+  AlertCircle,
+  CheckCircle2,
+  TrendingUp,
+} from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -7,12 +11,14 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
+import {
+  ChartContainer,
+} from '@/components/ui/chart';
 import { formatCurrency } from '@/lib/utils';
 import type { MonthlySummary } from '@/lib/types';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { AreaChart, Area, XAxis, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, ResponsiveContainer, Tooltip } from 'recharts';
 
 type MonthlyBalanceChartProps = {
   data: MonthlySummary[];
@@ -87,6 +93,58 @@ export function MonthlyBalanceChart({ data }: MonthlyBalanceChartProps) {
     }))
     .reverse();
 
+  const latestSummary = data.length > 0 ? data[0] : null;
+
+  const renderAlert = () => {
+    if (!latestSummary || format(new Date(), 'yyyy-MM') !== latestSummary.id) {
+      return (
+        <CardDescription className="flex items-center gap-2">
+          <TrendingUp className="size-4" />
+          Suas receitas e despesas dos últimos meses.
+        </CardDescription>
+      );
+    }
+    
+    const { totalIncome, totalExpense } = latestSummary;
+    const difference = totalIncome - totalExpense;
+
+    if (difference >= 1500) {
+      return (
+        <div className="flex items-center gap-2 text-sm text-primary">
+          <CheckCircle2 className="size-4" />
+          <p>
+            Parabéns! Você economizou{' '}
+            <span className="font-bold">{formatCurrency(difference)}</span> este
+            mês.
+          </p>
+        </div>
+      );
+    }
+
+    if (totalExpense > totalIncome) {
+      return (
+        <div className="flex items-center gap-2 text-sm text-destructive">
+          <AlertCircle className="size-4" />
+          <p>
+            Atenção! Suas despesas superaram as receitas em{' '}
+            <span className="font-bold">
+              {formatCurrency(Math.abs(difference))}
+            </span>
+            .
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <CardDescription className="flex items-center gap-2">
+        <TrendingUp className="size-4" />
+        Seu balanço este mês está positivo em {formatCurrency(difference)}.
+      </CardDescription>
+    );
+  };
+
+
   const latestData = chartData[chartData.length - 1];
 
   if (data.length === 0) {
@@ -113,9 +171,7 @@ export function MonthlyBalanceChart({ data }: MonthlyBalanceChartProps) {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <CardTitle>Balanço Mensal</CardTitle>
-            <CardDescription>
-              Suas receitas e despesas dos últimos meses.
-            </CardDescription>
+            {renderAlert()}
           </div>
           <div className="flex gap-4 text-sm sm:items-center">
             <div className="flex items-center gap-2">
@@ -189,9 +245,13 @@ export function MonthlyBalanceChart({ data }: MonthlyBalanceChartProps) {
                 axisLine={false}
                 tickMargin={8}
                 fontSize={12}
+                tickFormatter={(value) => value.slice(0, 3)}
                 tick={{ fill: 'hsl(var(--muted-foreground))' }}
               />
-              <ChartTooltip cursor={false} content={<CustomTooltip />} />
+              <Tooltip
+                cursor={false}
+                content={<CustomTooltip />}
+              />
               <Area
                 dataKey="totalExpense"
                 type="monotone"
