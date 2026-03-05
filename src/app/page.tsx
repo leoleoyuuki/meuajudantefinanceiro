@@ -175,18 +175,7 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex items-center justify-between">
-        <DashboardHeader />
-        <Button
-          asChild
-          className="hidden lg:flex"
-        >
-          <Link href="/add-transaction">
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Novo Lançamento
-          </Link>
-        </Button>
-      </div>
+      <DashboardHeader />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="flex flex-col gap-6 lg:col-span-2">
@@ -217,6 +206,16 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex flex-col gap-6 lg:col-span-1">
+          <Button
+            asChild
+            size="lg"
+            className="hidden lg:flex"
+          >
+            <Link href="/add-transaction">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Novo Lançamento
+            </Link>
+          </Button>
           <Button asChild size="sm" className="flex w-full lg:hidden">
             <Link href="/add-transaction">
               <PlusCircle className="mr-2 h-4 w-4" />
