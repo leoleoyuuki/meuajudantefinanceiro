@@ -179,8 +179,7 @@ export default function DashboardPage() {
         <DashboardHeader />
         <Button
           asChild
-          size="sm"
-          className="hidden rounded-full lg:flex"
+          className="hidden lg:flex"
         >
           <Link href="/add-transaction">
             <PlusCircle className="mr-2 h-4 w-4" />
