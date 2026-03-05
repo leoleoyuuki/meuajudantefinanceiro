@@ -324,7 +324,7 @@ export default function TransactionsPage() {
                 <Accordion
                   type="single"
                   collapsible
-                  className="w-full rounded-lg border px-4"
+                  className="w-full rounded-lg border"
                 >
                   {analysis.analysis.map((item, index) => {
                     const status = statusConfig[item.status];
@@ -339,7 +339,7 @@ export default function TransactionsPage() {
                             : ''
                         }
                       >
-                        <AccordionTrigger className="py-3 text-sm hover:no-underline">
+                        <AccordionTrigger className="px-4 py-3 text-sm hover:no-underline">
                           <div className="flex items-center gap-3">
                             <Icon
                               className={cn('size-5 shrink-0', status.color)}
@@ -351,7 +351,7 @@ export default function TransactionsPage() {
                         </AccordionTrigger>
                         <AccordionContent
                           className={cn(
-                            'rounded-b-lg p-3 -mx-4 -mb-3',
+                            'rounded-b-lg p-3 -mb-3',
                             status.bgColor
                           )}
                         >
