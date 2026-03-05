@@ -115,6 +115,18 @@ export function MonthlyBalanceChart({ data }: MonthlyBalanceChartProps) {
               }}
             >
               <defs>
+                <linearGradient id="fillIncome" x1="0" y1="0" x2="0" y2="1">
+                  <stop
+                    offset="5%"
+                    stopColor="var(--color-totalIncome)"
+                    stopOpacity={0.4}
+                  />
+                  <stop
+                    offset="95%"
+                    stopColor="var(--color-totalIncome)"
+                    stopOpacity={0.1}
+                  />
+                </linearGradient>
                 <linearGradient id="fillExpense" x1="0" y1="0" x2="0" y2="1">
                   <stop
                     offset="5%"
@@ -170,7 +182,7 @@ export function MonthlyBalanceChart({ data }: MonthlyBalanceChartProps) {
               <Area
                 dataKey="totalIncome"
                 type="monotone"
-                fill="transparent"
+                fill="url(#fillIncome)"
                 stroke="var(--color-totalIncome)"
                 strokeWidth={2}
                 dot={{
