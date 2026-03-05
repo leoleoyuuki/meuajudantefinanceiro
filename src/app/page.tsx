@@ -29,7 +29,7 @@ import type {
 } from '@/lib/types';
 import { useMemo } from 'react';
 import { format } from 'date-fns';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, cn } from '@/lib/utils';
 import Link from 'next/link';
 import { StatCard } from '@/components/dashboard/stat-card';
 import { RecentTransactions } from '@/components/dashboard/recent-transactions';
@@ -101,21 +101,6 @@ export default function DashboardPage() {
     }));
   }, [recentTransactions, categories]);
 
-  const dashboardData = useMemo(() => {
-    const currentMonthSummary = monthlySummaries?.[0];
-    if (
-      !currentMonthSummary ||
-      currentMonthSummary.id !== format(new Date(), 'yyyy-MM')
-    ) {
-      return { totalIncome: 0, totalExpense: 0, balance: 0 };
-    }
-    return {
-      totalIncome: currentMonthSummary.totalIncome,
-      totalExpense: currentMonthSummary.totalExpense,
-      balance: currentMonthSummary.netBalance,
-    };
-  }, [monthlySummaries]);
-
   const goalsData = useMemo(() => {
     if (!goalsSummary || goalsSummary.goalsCount === 0) {
       return {
@@ -133,6 +118,28 @@ export default function DashboardPage() {
 
     return { totalSaved, firstGoal, overallProgress };
   }, [goalsSummary, firstGoalArr]);
+
+  const dashboardData = useMemo(() => {
+    const currentMonthSummary = monthlySummaries?.[0];
+    const totalSavedForGoals = goalsData.totalSaved || 0;
+    if (
+      !currentMonthSummary ||
+      currentMonthSummary.id !== format(new Date(), 'yyyy-MM')
+    ) {
+      return {
+        totalIncome: 0,
+        totalExpense: 0,
+        balance: 0,
+        invested: totalSavedForGoals,
+      };
+    }
+    return {
+      totalIncome: currentMonthSummary.totalIncome,
+      totalExpense: currentMonthSummary.totalExpense,
+      balance: currentMonthSummary.netBalance,
+      invested: totalSavedForGoals,
+    };
+  }, [monthlySummaries, goalsData]);
 
   const categorySpendingData = useMemo(() => {
     if (!monthlySummaries || !categories) return [];
@@ -173,6 +180,8 @@ export default function DashboardPage() {
     );
   }
 
+  const finalBalance = dashboardData.balance - dashboardData.invested;
+
   return (
     <div className="flex flex-col gap-8">
       <DashboardHeader />
@@ -183,7 +192,8 @@ export default function DashboardPage() {
             <CardContent className="flex flex-col p-0 md:flex-row md:items-center">
               <StatCard
                 title="Balanço"
-                value={formatCurrency(dashboardData.balance)}
+                value={formatCurrency(finalBalance)}
+                className={cn(finalBalance < 0 && 'text-destructive')}
               />
               <div className="mx-6 hidden h-12 w-[1px] bg-border md:block" />
               <div className="my-2 h-[1px] w-full bg-border md:hidden" />
@@ -199,9 +209,15 @@ export default function DashboardPage() {
                 value={formatCurrency(dashboardData.totalExpense)}
                 className="text-destructive"
               />
+              <div className="mx-6 hidden h-12 w-[1px] bg-border md:block" />
+              <div className="my-2 h-[1px] w-full bg-border md:hidden" />
+              <StatCard
+                title="Valor Investido"
+                value={formatCurrency(dashboardData.invested)}
+                className="text-[hsl(var(--chart-1))]"
+              />
             </CardContent>
           </Card>
-          <MonthlyBalanceChart data={monthlySummaries || []} />
           <RecentTransactions transactions={enrichedTransactions} />
         </div>
 
@@ -212,10 +228,7 @@ export default function DashboardPage() {
               Novo Lançamento
             </Link>
           </Button>
-          <Button
-            asChild
-            className="hidden w-full md:flex"
-          >
+          <Button asChild className="hidden w-full md:flex">
             <Link href="/add-transaction">
               <PlusCircle className="mr-2 h-4 w-4" />
               Novo Lançamento
@@ -262,11 +275,7 @@ export default function DashboardPage() {
                   </Link>
                 )}
 
-                <Button
-                  asChild
-                  variant="link"
-                  className="mt-2 w-full px-0"
-                >
+                <Button asChild variant="link" className="mt-2 w-full px-0">
                   <Link href="/goals">Ver todas as metas</Link>
                 </Button>
               </CardContent>
@@ -278,7 +287,8 @@ export default function DashboardPage() {
                 Crie sua primeira meta
               </h2>
               <p className="text-muted-foreground">
-                Comece a planejar seu futuro financeiro criando sua primeira meta.
+                Comece a planejar seu futuro financeiro criando sua primeira
+                meta.
               </p>
               <Button asChild className="mt-4">
                 <Link href="/goals/add">
@@ -288,6 +298,7 @@ export default function DashboardPage() {
               </Button>
             </Card>
           )}
+          <MonthlyBalanceChart data={monthlySummaries || []} />
           <CategorySpendingChart data={categorySpendingData} />
         </div>
       </div>
