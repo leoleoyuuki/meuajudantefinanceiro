@@ -11,22 +11,12 @@ import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-  ChartLegend,
-  ChartLegendContent,
 } from '@/components/ui/chart';
 import { formatCurrency } from '@/lib/utils';
 import type { MonthlySummary } from '@/lib/types';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import {
-  AreaChart,
-  Area,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  ResponsiveContainer,
-} from 'recharts';
+import { AreaChart, Area, XAxis, ResponsiveContainer } from 'recharts';
 
 type MonthlyBalanceChartProps = {
   data: MonthlySummary[];
@@ -39,7 +29,7 @@ const chartConfig = {
   },
   totalExpense: {
     label: 'Despesas',
-    color: 'hsl(var(--destructive))',
+    color: 'hsl(var(--foreground))',
   },
 };
 
@@ -53,6 +43,8 @@ export function MonthlyBalanceChart({ data }: MonthlyBalanceChartProps) {
       totalExpense: summary.totalExpense,
     }))
     .reverse();
+
+  const latestData = chartData[chartData.length - 1];
 
   if (data.length === 0) {
     return (
@@ -75,66 +67,80 @@ export function MonthlyBalanceChart({ data }: MonthlyBalanceChartProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Balanço Mensal</CardTitle>
-        <CardDescription>
-          Acompanhe suas receitas e despesas ao longo do tempo.
-        </CardDescription>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <CardTitle>Balanço Mensal</CardTitle>
+            <CardDescription>
+              Suas receitas e despesas dos últimos meses.
+            </CardDescription>
+          </div>
+          <div className="flex gap-4 text-sm sm:items-center">
+            <div className="flex items-center gap-2">
+              <div
+                className="h-2.5 w-2.5 rounded-full"
+                style={{ backgroundColor: 'hsl(var(--primary))' }}
+              />
+              <span className="text-muted-foreground">Receitas</span>
+              {latestData && (
+                <span className="font-semibold">
+                  {formatCurrency(latestData.totalIncome)}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <div
+                className="h-2.5 w-2.5 rounded-full"
+                style={{ backgroundColor: 'hsl(var(--foreground))' }}
+              />
+              <span className="text-muted-foreground">Despesas</span>
+              {latestData && (
+                <span className="font-semibold">
+                  {formatCurrency(latestData.totalExpense)}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig} className="h-60 w-full">
           <ResponsiveContainer>
-            <AreaChart data={chartData}>
+            <AreaChart
+              data={chartData}
+              margin={{
+                top: 5,
+                right: 10,
+                left: 10,
+                bottom: 0,
+              }}
+            >
               <defs>
-                <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id="fillExpense" x1="0" y1="0" x2="0" y2="1">
                   <stop
                     offset="5%"
-                    stopColor="var(--color-totalIncome)"
-                    stopOpacity={0.8}
+                    stopColor="hsl(var(--muted))"
+                    stopOpacity={0.4}
                   />
                   <stop
                     offset="95%"
-                    stopColor="var(--color-totalIncome)"
-                    stopOpacity={0}
-                  />
-                </linearGradient>
-                <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
-                  <stop
-                    offset="5%"
-                    stopColor="var(--color-totalExpense)"
-                    stopOpacity={0.8}
-                  />
-                  <stop
-                    offset="95%"
-                    stopColor="var(--color-totalExpense)"
-                    stopOpacity={0}
+                    stopColor="hsl(var(--muted))"
+                    stopOpacity={0.1}
                   />
                 </linearGradient>
               </defs>
-              <CartesianGrid vertical={false} />
               <XAxis
                 dataKey="month"
                 tickLine={false}
                 axisLine={false}
                 tickMargin={8}
                 fontSize={12}
-              />
-              <YAxis
-                tickFormatter={(value) =>
-                  `R$${new Intl.NumberFormat('pt-BR', {
-                    notation: 'compact',
-                    compactDisplay: 'short',
-                  }).format(value)}`
-                }
-                tickLine={false}
-                axisLine={false}
-                tickMargin={8}
-                width={80}
-                fontSize={12}
+                tick={{ fill: 'hsl(var(--muted-foreground))' }}
               />
               <ChartTooltip
-                cursor={true}
+                cursor={false}
                 content={
                   <ChartTooltipContent
+                    indicator="dot"
                     formatter={(value, name) => {
                       if (name === 'totalIncome')
                         return [formatCurrency(Number(value)), 'Receitas'];
@@ -145,34 +151,37 @@ export function MonthlyBalanceChart({ data }: MonthlyBalanceChartProps) {
                   />
                 }
               />
-              <ChartLegend content={<ChartLegendContent />} />
-              <Area
-                dataKey="totalIncome"
-                type="monotone"
-                fill="url(#colorIncome)"
-                stroke="transparent"
-              />
               <Area
                 dataKey="totalExpense"
                 type="monotone"
-                fill="url(#colorExpense)"
-                stroke="transparent"
-              />
-              <Line
-                type="monotone"
-                dataKey="totalIncome"
-                stroke="var(--color-totalIncome)"
-                strokeWidth={2}
-                dot={false}
-                name="Receitas"
-              />
-              <Line
-                type="monotone"
-                dataKey="totalExpense"
+                fill="url(#fillExpense)"
                 stroke="var(--color-totalExpense)"
                 strokeWidth={2}
-                dot={false}
+                dot={{
+                  r: 4,
+                  strokeWidth: 2,
+                }}
+                activeDot={{
+                  r: 6,
+                  strokeWidth: 2,
+                }}
                 name="Despesas"
+              />
+              <Area
+                dataKey="totalIncome"
+                type="monotone"
+                fill="transparent"
+                stroke="var(--color-totalIncome)"
+                strokeWidth={2}
+                dot={{
+                  r: 4,
+                  strokeWidth: 2,
+                }}
+                activeDot={{
+                  r: 6,
+                  strokeWidth: 2,
+                }}
+                name="Receitas"
               />
             </AreaChart>
           </ResponsiveContainer>
