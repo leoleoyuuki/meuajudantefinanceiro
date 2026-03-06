@@ -20,7 +20,14 @@ import {
   useMemoFirebase,
   useDoc,
 } from '@/firebase';
-import { collection, doc, query, limit, orderBy } from 'firebase/firestore';
+import {
+  collection,
+  doc,
+  query,
+  limit,
+  orderBy,
+  getDocs,
+} from 'firebase/firestore';
 import type {
   FinancialGoal,
   MonthlySummary,
@@ -28,7 +35,7 @@ import type {
   Transaction,
   Category,
 } from '@/lib/types';
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { formatCurrency, cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -75,16 +82,41 @@ export default function DashboardPage() {
   const { data: firstGoalArr, isLoading: firstGoalLoading } =
     useCollection<FinancialGoal>(firstGoalQuery);
 
-  const recentTransactionsQuery = useMemoFirebase(() => {
-    if (!user) return null;
-    return query(
-      collection(firestore, 'users', user.uid, 'transactions'),
-      orderBy('date', 'desc'),
-      limit(5)
-    );
-  }, [firestore, user]);
-  const { data: recentTransactions, isLoading: transactionsLoading } =
-    useCollection<Transaction>(recentTransactionsQuery);
+  const [recentTransactions, setRecentTransactions] = useState<
+    Transaction[] | null
+  >(null);
+  const [transactionsLoading, setTransactionsLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user || !firestore) {
+      setTransactionsLoading(false);
+      return;
+    }
+
+    const fetchTransactions = async () => {
+      setTransactionsLoading(true);
+      const q = query(
+        collection(firestore, 'users', user.uid, 'transactions'),
+        orderBy('date', 'desc'),
+        limit(5)
+      );
+      try {
+        const querySnapshot = await getDocs(q);
+        const transactions = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as Transaction[];
+        setRecentTransactions(transactions);
+      } catch (error) {
+        console.error('Error fetching recent transactions: ', error);
+        setRecentTransactions([]);
+      } finally {
+        setTransactionsLoading(false);
+      }
+    };
+
+    fetchTransactions();
+  }, [user, firestore]);
 
   const categoriesQuery = useMemoFirebase(
     () =>
@@ -212,7 +244,7 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="h-[80vh] flex items-center justify-center">
+      <div className="flex h-[80vh] items-center justify-center">
         <Loader2 className="size-8 animate-spin" />
       </div>
     );
@@ -226,14 +258,14 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="flex flex-col gap-6 lg:col-span-2">
-
           {/* ── MOBILE stats (hidden on md+) ── */}
-          <div className="md:hidden overflow-hidden rounded-xl border border-border">
+          <div className="overflow-hidden rounded-xl border border-border md:hidden">
             {/* Hero balance */}
             <div
-              className="relative overflow-hidden px-5 pt-5 pb-7"
+              className="relative overflow-hidden px-5 pb-7 pt-5"
               style={{
-                background: 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.75) 100%)',
+                background:
+                  'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.75) 100%)',
               }}
             >
               {/* Subtle grid texture overlay */}
@@ -246,7 +278,7 @@ export default function DashboardPage() {
               />
               <div className="relative flex items-start justify-between">
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-primary-foreground/60 mb-2">
+                  <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.15em] text-primary-foreground/60">
                     Balanço do mês
                   </p>
                   <p
@@ -258,33 +290,33 @@ export default function DashboardPage() {
                     {formatCurrency(finalBalance)}
                   </p>
                 </div>
-                <Eye className="size-4 text-primary-foreground/40 mt-1" />
+                <Eye className="mt-1 size-4 text-primary-foreground/40" />
               </div>
             </div>
 
             {/* Three metrics row */}
             <div className="grid grid-cols-3 divide-x divide-border bg-card">
               <div className="px-3 py-4">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground mb-1.5">
+                <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                   Receitas
                 </p>
-                <p className="text-sm font-bold text-primary leading-none">
+                <p className="text-sm font-bold leading-none text-primary">
                   {formatCurrency(dashboardData.totalIncome)}
                 </p>
               </div>
               <div className="px-3 py-4">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground mb-1.5">
+                <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                   Despesas
                 </p>
-                <p className="text-sm font-bold text-destructive leading-none">
+                <p className="text-sm font-bold leading-none text-destructive">
                   {formatCurrency(dashboardData.totalExpense)}
                 </p>
               </div>
               <div className="px-3 py-4">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground mb-1.5">
+                <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                   Investido
                 </p>
-                <p className="text-sm font-bold text-chart-1 leading-none">
+                <p className="text-sm font-bold leading-none text-chart-1">
                   {formatCurrency(dashboardData.invested)}
                 </p>
               </div>
@@ -403,9 +435,7 @@ export default function DashboardPage() {
       </div>
 
       <Link href="/add-transaction">
-        <Button
-          className="fixed bottom-6 right-6 z-50 hidden h-14 w-14 items-center justify-center rounded-full shadow-lg md:flex lg:hidden"
-        >
+        <Button className="fixed bottom-6 right-6 z-50 hidden h-14 w-14 items-center justify-center rounded-full shadow-lg md:flex lg:hidden">
           <PlusCircle className="h-7 w-7" />
           <span className="sr-only">Novo Lançamento</span>
         </Button>
