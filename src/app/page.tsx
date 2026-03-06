@@ -165,6 +165,44 @@ export default function DashboardPage() {
       .filter(Boolean) as { category: string; amount: number; fill: string }[];
   }, [monthlySummaries, categories]);
 
+  const monthlyChartData = useMemo(() => {
+    if (!monthlySummaries || !user) {
+      return [];
+    }
+
+    if (monthlySummaries.length === 1) {
+      const summary = monthlySummaries[0];
+      const summaryDate = new Date(summary.year, summary.month - 1, 2);
+
+      const oneMonthAgoDate = new Date(summaryDate);
+      oneMonthAgoDate.setMonth(summaryDate.getMonth() - 1);
+
+      const twoMonthsAgoDate = new Date(summaryDate);
+      twoMonthsAgoDate.setMonth(summaryDate.getMonth() - 2);
+
+      const dummySummary = (date: Date): MonthlySummary => ({
+        id: format(date, 'yyyy-MM'),
+        userId: user.uid,
+        month: date.getMonth() + 1,
+        year: date.getFullYear(),
+        totalIncome: 0,
+        totalExpense: 0,
+        netBalance: 0,
+        spendingByCategory: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+
+      return [
+        summary,
+        dummySummary(oneMonthAgoDate),
+        dummySummary(twoMonthsAgoDate),
+      ];
+    }
+
+    return monthlySummaries;
+  }, [monthlySummaries, user]);
+
   const isLoading =
     summariesLoading ||
     goalsSummaryLoading ||
@@ -285,7 +323,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <MonthlyBalanceChart data={monthlySummaries || []} />
+          <MonthlyBalanceChart data={monthlyChartData} />
           <RecentTransactions transactions={enrichedTransactions} />
         </div>
 
