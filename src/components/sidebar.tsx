@@ -19,6 +19,7 @@ import {
   User,
   LogOut,
   MoreHorizontal,
+  LifeBuoy,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -173,13 +174,32 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
+              asChild
+              isActive={pathname === '/help'}
+              tooltip="Ajuda"
+              className="h-9 justify-start gap-2 px-2 group-data-[collapsible=icon]:justify-center"
+            >
+              <Link href="/help">
+                <LifeBuoy className="size-4 shrink-0" />
+                <span className="group-data-[collapsible=icon]:hidden">
+                  Ajuda
+                </span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              asChild
+              isActive={pathname === '/settings'}
               tooltip="Configurações"
               className="h-9 justify-start gap-2 px-2 group-data-[collapsible=icon]:justify-center"
             >
-              <Settings className="size-4 shrink-0" />
-              <span className="group-data-[collapsible=icon]:hidden">
-                Configurações
-              </span>
+              <Link href="/settings">
+                <Settings className="size-4 shrink-0" />
+                <span className="group-data-[collapsible=icon]:hidden">
+                  Configurações
+                </span>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

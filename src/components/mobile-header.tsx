@@ -54,6 +54,8 @@ export function MobileHeader() {
     if (pathname.startsWith('/goals/add')) return 'Nova Meta';
     if (pathname.startsWith('/goals')) return 'Metas';
     if (pathname.startsWith('/categories')) return 'Categorias';
+    if (pathname.startsWith('/settings')) return 'Configurações';
+    if (pathname.startsWith('/help')) return 'Ajuda';
     return 'Meu Ajudante';
   };
 
@@ -164,14 +166,14 @@ export function MobileHeader() {
             </Dialog>
 
             <DropdownMenuItem asChild>
-              <Link href="#">
+              <Link href="/help">
                 <LifeBuoy className="mr-2 h-4 w-4" />
                 <span>Ajuda</span>
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link href="#">
+              <Link href="/settings">
                 <Settings className="mr-2 h-4 w-4" />
                 <span>Configurações</span>
               </Link>
