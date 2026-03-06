@@ -41,11 +41,9 @@ export default function AuthWrapper({
   if (user && pathname !== '/login') {
     if (isMobile) {
       return (
-        <div className="relative flex min-h-screen w-full flex-col bg-secondary/50">
-          <div className="container mx-auto max-w-lg flex-1 bg-background shadow-lg">
-            <MobileHeader />
-            <main className="p-4 pb-28">{children}</main>
-          </div>
+        <div className="relative flex min-h-screen w-full flex-col bg-background">
+          <MobileHeader />
+          <main className="flex-1 p-4 pb-28">{children}</main>
           <BottomNav />
         </div>
       );
