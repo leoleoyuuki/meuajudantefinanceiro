@@ -90,7 +90,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
               const batch = writeBatch(firestore);
               const now = new Date().toISOString();
 
-              // 1. Create user profile document
+              // 1. Create user profile document for social logins
               const userProfileData = {
                 uid: firebaseUser.uid,
                 email: firebaseUser.email,
@@ -116,7 +116,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
               await batch.commit();
 
             } catch (error) {
-               console.error("Failed to set up new user:", error);
+               console.error("Failed to set up new user from provider:", error);
             }
           }
         }
