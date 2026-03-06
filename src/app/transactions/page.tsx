@@ -59,6 +59,7 @@ import { CategorySpendingChart } from '@/components/dashboard/category-spending-
 import {
   Tooltip,
   TooltipContent,
+  TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
@@ -110,6 +111,12 @@ function groupTransactionsByDay(transactions: Transaction[]) {
   );
 }
 
+interface TransactionsCacheEntry {
+  transactions: Transaction[];
+  lastDoc: QueryDocumentSnapshot | null;
+  hasMore: boolean;
+}
+
 export default function TransactionsPage() {
   const firestore = useFirestore();
   const { user } = useUser();
@@ -142,6 +149,9 @@ export default function TransactionsPage() {
   const [transactionsLoading, setTransactionsLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const TRANSACTION_LIMIT = 15;
+  const [transactionsCache, setTransactionsCache] = useState<
+    Record<string, TransactionsCacheEntry>
+  >({});
 
   const categoriesQuery = useMemoFirebase(
     () =>
@@ -160,6 +170,16 @@ export default function TransactionsPage() {
 
     const fetchTransactions = async () => {
       setTransactionsLoading(true);
+
+      if (transactionsCache[selectedMonth]) {
+        const cachedData = transactionsCache[selectedMonth];
+        setTransactions(cachedData.transactions);
+        setLastDoc(cachedData.lastDoc);
+        setHasMore(cachedData.hasMore);
+        setTransactionsLoading(false);
+        return;
+      }
+
       setTransactions([]);
       setLastDoc(null);
       setHasMore(true);
@@ -183,11 +203,22 @@ export default function TransactionsPage() {
           ...(doc.data() as object),
           id: doc.id,
         })) as Transaction[];
-        setTransactions(newTransactions);
         const lastVisible =
-          documentSnapshots.docs[documentSnapshots.docs.length - 1];
+          documentSnapshots.docs[documentSnapshots.docs.length - 1] || null;
+        const newHasMore = documentSnapshots.docs.length === TRANSACTION_LIMIT;
+
+        setTransactions(newTransactions);
         setLastDoc(lastVisible);
-        setHasMore(documentSnapshots.docs.length === TRANSACTION_LIMIT);
+        setHasMore(newHasMore);
+
+        setTransactionsCache((prevCache) => ({
+          ...prevCache,
+          [selectedMonth]: {
+            transactions: newTransactions,
+            lastDoc: lastVisible,
+            hasMore: newHasMore,
+          },
+        }));
       } catch (error) {
         console.error('Error fetching transactions: ', error);
       } finally {
@@ -223,11 +254,24 @@ export default function TransactionsPage() {
         ...(doc.data() as object),
         id: doc.id,
       })) as Transaction[];
-      setTransactions((prev) => [...prev, ...newTransactions]);
       const lastVisible =
-        documentSnapshots.docs[documentSnapshots.docs.length - 1];
+        documentSnapshots.docs[documentSnapshots.docs.length - 1] || null;
+      const newHasMore = documentSnapshots.docs.length === TRANSACTION_LIMIT;
+
+      setTransactions((prev) => {
+        const updatedTransactions = [...prev, ...newTransactions];
+        setTransactionsCache((prevCache) => ({
+          ...prevCache,
+          [selectedMonth]: {
+            transactions: updatedTransactions,
+            lastDoc: lastVisible,
+            hasMore: newHasMore,
+          },
+        }));
+        return updatedTransactions;
+      });
       setLastDoc(lastVisible);
-      setHasMore(documentSnapshots.docs.length === TRANSACTION_LIMIT);
+      setHasMore(newHasMore);
     } catch (error) {
       console.error('Error fetching more transactions: ', error);
     } finally {
@@ -383,39 +427,41 @@ export default function TransactionsPage() {
               <CardTitle>Análise de Despesas</CardTitle>
               <CardDescription>
                 Compare seus gastos com as{' '}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="cursor-help font-semibold text-primary underline decoration-dotted underline-offset-2">
-                      porcentagens ideais
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs">
-                    <div className="space-y-2 p-1">
-                      <h4 className="font-semibold">
-                        Regra 50-30-20: Orçamento Ideal
-                      </h4>
-                      <p className="text-xs text-muted-foreground">
-                        Baseado na sua renda, seus gastos são comparados com
-                        estas sugestões.
-                      </p>
-                      <ul className="space-y-1.5 text-xs">
-                        {Object.entries(idealPercentages).map(
-                          ([category, percentage]) => (
-                            <li
-                              key={category}
-                              className="flex justify-between gap-4"
-                            >
-                              <span className="font-medium text-muted-foreground">
-                                {category}
-                              </span>
-                              <span className="font-bold">{percentage}%</span>
-                            </li>
-                          )
-                        )}
-                      </ul>
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="cursor-help font-semibold text-primary underline decoration-dotted underline-offset-2">
+                        porcentagens ideais
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <div className="space-y-2 p-1">
+                        <h4 className="font-semibold">
+                          Regra 50-30-20: Orçamento Ideal
+                        </h4>
+                        <p className="text-xs text-muted-foreground">
+                          Baseado na sua renda, seus gastos são comparados com
+                          estas sugestões.
+                        </p>
+                        <ul className="space-y-1.5 text-xs">
+                          {Object.entries(idealPercentages).map(
+                            ([category, percentage]) => (
+                              <li
+                                key={category}
+                                className="flex justify-between gap-4"
+                              >
+                                <span className="font-medium text-muted-foreground">
+                                  {category}
+                                </span>
+                                <span className="font-bold">{percentage}%</span>
+                              </li>
+                            )
+                          )}
+                        </ul>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 .
               </CardDescription>
             </div>
