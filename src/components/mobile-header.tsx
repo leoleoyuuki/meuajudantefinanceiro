@@ -76,11 +76,8 @@ export function MobileHeader() {
       {pageTitle ? (
         <h1 className="font-headline text-xl font-bold">{pageTitle}</h1>
       ) : (
-        <Link href="/" className="flex items-center gap-2 outline-none">
+        <Link href="/" className="flex items-center outline-none">
           <PiggyBank className="size-7 text-primary" />
-          <span className="font-headline text-lg font-bold text-foreground">
-            MeuAjudante
-          </span>
         </Link>
       )}
 
