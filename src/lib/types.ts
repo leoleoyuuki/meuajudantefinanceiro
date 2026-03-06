@@ -1,3 +1,5 @@
+import type { QueryDocumentSnapshot } from "firebase/firestore";
+
 export type UserProfile = {
   uid: string;
   email: string | null;
@@ -67,3 +69,5 @@ export type MonthlySummary = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type { QueryDocumentSnapshot };

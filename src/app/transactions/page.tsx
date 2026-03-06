@@ -2,7 +2,12 @@
 
 import { PageHeader } from '@/components/page-header';
 import { iconMap } from '@/lib/icons';
-import type { Transaction, Category, MonthlySummary } from '@/lib/types';
+import type {
+  Transaction,
+  Category,
+  MonthlySummary,
+  QueryDocumentSnapshot,
+} from '@/lib/types';
 import { cn, formatCurrency } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -20,7 +25,15 @@ import {
   useCollection,
   useMemoFirebase,
 } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
+import {
+  collection,
+  query,
+  orderBy,
+  where,
+  getDocs,
+  limit,
+  startAfter,
+} from 'firebase/firestore';
 import { useMemo, useState, useEffect } from 'react';
 import {
   Select,
@@ -48,6 +61,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { Button } from '@/components/ui/button';
 
 // Based on common financial advice (50/30/20 rule adjusted)
 const idealPercentages: { [key: string]: number } = {
@@ -122,18 +136,12 @@ export default function TransactionsPage() {
     }
   }, [summaries, selectedMonth]);
 
-  const allTransactionsQuery = useMemoFirebase(
-    () =>
-      user
-        ? query(
-            collection(firestore, 'users', user.uid, 'transactions'),
-            orderBy('date', 'desc')
-          )
-        : null,
-    [firestore, user]
-  );
-  const { data: allTransactions, isLoading: transactionsLoading } =
-    useCollection<Transaction>(allTransactionsQuery);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [transactionsLoading, setTransactionsLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const TRANSACTION_LIMIT = 15;
 
   const categoriesQuery = useMemoFirebase(
     () =>
@@ -142,6 +150,90 @@ export default function TransactionsPage() {
   );
   const { data: categories, isLoading: categoriesLoading } =
     useCollection<Category>(categoriesQuery);
+
+  useEffect(() => {
+    if (!user || !selectedMonth || !firestore) {
+      setTransactions([]);
+      setTransactionsLoading(false);
+      return;
+    }
+
+    const fetchTransactions = async () => {
+      setTransactionsLoading(true);
+      setTransactions([]);
+      setLastDoc(null);
+      setHasMore(true);
+
+      const [year, month] = selectedMonth.split('-').map(Number);
+      const nextMonth = month === 12 ? 1 : month + 1;
+      const nextYear = month === 12 ? year + 1 : year;
+      const endDate = `${nextYear}-${String(nextMonth).padStart(2, '0')}`;
+
+      const q = query(
+        collection(firestore, 'users', user.uid, 'transactions'),
+        where('date', '>=', selectedMonth),
+        where('date', '<', endDate),
+        orderBy('date', 'desc'),
+        limit(TRANSACTION_LIMIT)
+      );
+
+      try {
+        const documentSnapshots = await getDocs(q);
+        const newTransactions = documentSnapshots.docs.map((doc) => ({
+          ...(doc.data() as object),
+          id: doc.id,
+        })) as Transaction[];
+        setTransactions(newTransactions);
+        const lastVisible =
+          documentSnapshots.docs[documentSnapshots.docs.length - 1];
+        setLastDoc(lastVisible);
+        setHasMore(documentSnapshots.docs.length === TRANSACTION_LIMIT);
+      } catch (error) {
+        console.error('Error fetching transactions: ', error);
+      } finally {
+        setTransactionsLoading(false);
+      }
+    };
+
+    fetchTransactions();
+  }, [user, selectedMonth, firestore]);
+
+  const handleLoadMore = async () => {
+    if (!user || !selectedMonth || !firestore || !lastDoc || !hasMore) return;
+
+    setLoadingMore(true);
+
+    const [year, month] = selectedMonth.split('-').map(Number);
+    const nextMonth = month === 12 ? 1 : month + 1;
+    const nextYear = month === 12 ? year + 1 : year;
+    const endDate = `${nextYear}-${String(nextMonth).padStart(2, '0')}`;
+
+    const q = query(
+      collection(firestore, 'users', user.uid, 'transactions'),
+      where('date', '>=', selectedMonth),
+      where('date', '<', endDate),
+      orderBy('date', 'desc'),
+      startAfter(lastDoc),
+      limit(TRANSACTION_LIMIT)
+    );
+
+    try {
+      const documentSnapshots = await getDocs(q);
+      const newTransactions = documentSnapshots.docs.map((doc) => ({
+        ...(doc.data() as object),
+        id: doc.id,
+      })) as Transaction[];
+      setTransactions((prev) => [...prev, ...newTransactions]);
+      const lastVisible =
+        documentSnapshots.docs[documentSnapshots.docs.length - 1];
+      setLastDoc(lastVisible);
+      setHasMore(documentSnapshots.docs.length === TRANSACTION_LIMIT);
+    } catch (error) {
+      console.error('Error fetching more transactions: ', error);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   const selectedSummary = useMemo(() => {
     return summaries?.find((s) => s.id === selectedMonth);
@@ -183,10 +275,15 @@ export default function TransactionsPage() {
 
     const analysisItems = categorySpendingData.map((item) => {
       const idealPercentage = idealPercentages[item.category] || 5;
-      const idealAmount = selectedSummary.totalIncome * (idealPercentage / 100);
+      const idealAmount =
+        selectedSummary.totalIncome * (idealPercentage / 100);
       const spentAmount = item.amount;
       const ratio =
-        idealAmount > 0 ? spentAmount / idealAmount : spentAmount > 0 ? Infinity : 0;
+        idealAmount > 0
+          ? spentAmount / idealAmount
+          : spentAmount > 0
+          ? Infinity
+          : 0;
 
       let status: 'good' | 'warning' | 'over';
       let comment: string;
@@ -194,7 +291,7 @@ export default function TransactionsPage() {
       if (ratio <= 1.05) {
         status = 'good';
         comment = `Ótimo! Seus gastos com ${item.category} estão dentro do esperado.`;
-      } else if (ratio <= 1.20) {
+      } else if (ratio <= 1.2) {
         status = 'warning';
         comment = `Atenção: seus gastos com ${item.category} estão um pouco acima do ideal.`;
       } else {
@@ -217,7 +314,9 @@ export default function TransactionsPage() {
       };
     });
 
-    const overspentCategories = analysisItems.filter((i) => i.status === 'over');
+    const overspentCategories = analysisItems.filter(
+      (i) => i.status === 'over'
+    );
     const overspentNames = overspentCategories.map((c) => c.categoryName);
     let summary: string;
 
@@ -244,18 +343,13 @@ export default function TransactionsPage() {
     };
   }, [selectedSummary, categorySpendingData]);
 
-  const transactionsForMonth = useMemo(() => {
-    if (!allTransactions || !selectedMonth) return [];
-    return allTransactions.filter((t) => t.date.startsWith(selectedMonth));
-  }, [allTransactions, selectedMonth]);
-
   const enrichedTransactions = useMemo(() => {
-    if (!transactionsForMonth || !categories) return [];
-    return transactionsForMonth.map((t) => ({
+    if (!transactions || !categories) return [];
+    return transactions.map((t) => ({
       ...t,
       category: categories.find((c) => c.id === t.categoryId),
     }));
-  }, [transactionsForMonth, categories]);
+  }, [transactions, categories]);
 
   const filteredTransactions = useMemo(() => {
     if (!enrichedTransactions) return [];
@@ -268,7 +362,7 @@ export default function TransactionsPage() {
   }, [enrichedTransactions, searchTerm]);
 
   const groupedTransactions = groupTransactionsByDay(filteredTransactions);
-  const isLoading = summariesLoading || transactionsLoading || categoriesLoading;
+  const isLoading = summariesLoading || categoriesLoading;
 
   if (isLoading) {
     return (
@@ -438,7 +532,11 @@ export default function TransactionsPage() {
           />
         </div>
 
-        {filteredTransactions.length === 0 ? (
+        {transactionsLoading ? (
+          <div className="flex justify-center py-10">
+            <Loader2 className="size-8 animate-spin" />
+          </div>
+        ) : filteredTransactions.length === 0 ? (
           <div className="py-10 text-center text-muted-foreground">
             Nenhuma transação encontrada para este mês.
           </div>
@@ -505,6 +603,17 @@ export default function TransactionsPage() {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {!transactionsLoading && hasMore && (
+          <div className="mt-6 flex justify-center">
+            <Button onClick={handleLoadMore} disabled={loadingMore}>
+              {loadingMore ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
+              Ver mais
+            </Button>
           </div>
         )}
       </div>
