@@ -12,10 +12,8 @@ import { Progress } from '@/components/ui/progress';
 import { formatCurrency } from '@/lib/utils';
 import { format } from 'date-fns';
 import {
-  useCollection,
   useFirestore,
   useUser,
-  useMemoFirebase,
   updateDocumentNonBlocking,
 } from '@/firebase';
 import {
@@ -25,12 +23,14 @@ import {
   increment,
   getDoc,
   setDoc,
+  getDocs,
+  query,
 } from 'firebase/firestore';
 import type { FinancialGoal, MonthlySummary } from '@/lib/types';
 import { Loader2, PlusCircle, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -47,19 +47,49 @@ export default function GoalsPage() {
   const { user } = useUser();
   const { toast } = useToast();
 
+  const [goals, setGoals] = useState<FinancialGoal[] | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
   const [selectedGoal, setSelectedGoal] = useState<FinancialGoal | null>(null);
   const [amountToAdd, setAmountToAdd] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const goalsQuery = useMemoFirebase(
-    () =>
-      user ? collection(firestore, 'users', user.uid, 'financialGoals') : null,
-    [firestore, user]
-  );
-  const { data: goals, isLoading } = useCollection<FinancialGoal>(goalsQuery);
+  useEffect(() => {
+    if (!user || !firestore) {
+      setIsLoading(false);
+      return;
+    }
+
+    const fetchGoals = async () => {
+      setIsLoading(true);
+      const q = query(
+        collection(firestore, 'users', user.uid, 'financialGoals')
+      );
+      try {
+        const querySnapshot = await getDocs(q);
+        const fetchedGoals = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as FinancialGoal[];
+        setGoals(fetchedGoals);
+      } catch (error) {
+        console.error('Error fetching financial goals: ', error);
+        setGoals([]);
+        toast({
+          variant: 'destructive',
+          title: 'Erro ao buscar metas',
+          description: 'Não foi possível carregar suas metas financeiras.',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchGoals();
+  }, [user, firestore, toast]);
 
   const handleAddAmount = async () => {
-    if (!selectedGoal || !firestore || !user) return;
+    if (!selectedGoal || !firestore || !user || !goals) return;
     const numericAmount = parseFloat(amountToAdd);
     if (isNaN(numericAmount) || numericAmount <= 0) {
       toast({
@@ -80,6 +110,15 @@ export default function GoalsPage() {
       });
       return;
     }
+
+    // Optimistically update the UI
+    const updatedGoals = goals.map((goal) =>
+      goal.id === selectedGoal.id
+        ? { ...goal, currentAmount: newCurrentAmount, updatedAt: new Date().toISOString() }
+        : goal
+    );
+    setGoals(updatedGoals);
+
 
     const goalRef = doc(
       firestore,

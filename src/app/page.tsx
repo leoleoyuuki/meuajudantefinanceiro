@@ -69,18 +69,38 @@ export default function DashboardPage() {
   const { data: goalsSummary, isLoading: goalsSummaryLoading } =
     useDoc<GoalsSummary>(goalsSummaryQuery);
 
-  const firstGoalQuery = useMemoFirebase(
-    () =>
-      user
-        ? query(
-            collection(firestore, 'users', user.uid, 'financialGoals'),
-            limit(1)
-          )
-        : null,
-    [firestore, user]
-  );
-  const { data: firstGoalArr, isLoading: firstGoalLoading } =
-    useCollection<FinancialGoal>(firstGoalQuery);
+  const [firstGoal, setFirstGoal] = useState<FinancialGoal | null>(null);
+  const [firstGoalLoading, setFirstGoalLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user || !firestore) {
+      setFirstGoalLoading(false);
+      return;
+    }
+
+    const fetchFirstGoal = async () => {
+      setFirstGoalLoading(true);
+      const q = query(
+        collection(firestore, 'users', user.uid, 'financialGoals'),
+        limit(1)
+      );
+      try {
+        const querySnapshot = await getDocs(q);
+        const goals = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as FinancialGoal[];
+        setFirstGoal(goals.length > 0 ? goals[0] : null);
+      } catch (error) {
+        console.error('Error fetching first financial goal: ', error);
+        setFirstGoal(null);
+      } finally {
+        setFirstGoalLoading(false);
+      }
+    };
+
+    fetchFirstGoal();
+  }, [user, firestore]);
 
   const [recentTransactions, setRecentTransactions] = useState<
     Transaction[] | null
@@ -147,10 +167,9 @@ export default function DashboardPage() {
     const totalTarget = goalsSummary.totalTargetAmount;
     const overallProgress =
       totalTarget > 0 ? (totalSaved / totalTarget) * 100 : 0;
-    const firstGoal = firstGoalArr?.[0] || null;
 
     return { totalSaved, firstGoal, overallProgress };
-  }, [goalsSummary, firstGoalArr]);
+  }, [goalsSummary, firstGoal]);
 
   const dashboardData = useMemo(() => {
     const currentMonthSummary = monthlySummaries?.[0];
