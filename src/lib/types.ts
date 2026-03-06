@@ -5,7 +5,7 @@ export type UserProfile = {
   email: string | null;
   displayName: string | null;
   photoURL: string | null;
-  phone?: string;
+  phone?: string | null;
   createdAt: string;
 };
 
