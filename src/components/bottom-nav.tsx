@@ -33,9 +33,19 @@ export function BottomNav() {
                 <div key={item.href} className="flex justify-center">
                   <Link
                     href={item.href}
-                    className="relative -top-6 flex size-16 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform hover:scale-105"
+                    className="relative -top-6 flex size-16 items-center justify-center overflow-hidden rounded-full text-primary-foreground shadow-lg transition-transform hover:scale-105"
+                    style={{
+                      background: 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.75) 100%)',
+                    }}
                   >
-                    <item.icon className="size-8" />
+                    <div
+                      className="pointer-events-none absolute inset-0 opacity-[0.06]"
+                      style={{
+                        backgroundImage:
+                          'repeating-linear-gradient(0deg, transparent, transparent 24px, currentColor 24px, currentColor 25px), repeating-linear-gradient(90deg, transparent, transparent 24px, currentColor 24px, currentColor 25px)',
+                      }}
+                    />
+                    <item.icon className="relative size-8" />
                     <span className="sr-only">{item.label}</span>
                   </Link>
                 </div>
