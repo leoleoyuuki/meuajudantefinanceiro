@@ -3,7 +3,7 @@
 import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
 import { FirebaseApp } from 'firebase/app';
 import { Firestore, collection, doc, getDocs, limit, writeBatch, getDoc, setDoc } from 'firebase/firestore';
-import { Auth, User, onAuthStateChanged } from 'firebase/auth';
+import { Auth, User, onAuthStateChanged, getRedirectResult } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
 import { defaultCategories } from '@/lib/default-categories';
 
@@ -76,6 +76,14 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
     }
 
     setUserAuthState({ user: null, isUserLoading: true, userError: null }); // Reset on auth instance change
+
+    // This call is crucial for the redirect flow to complete.
+    // It processes the redirect result when the user returns to the app.
+    getRedirectResult(auth).catch((error) => {
+        console.error("Login redirect failed:", error);
+        // We can show an error to the user if needed. The onAuthStateChanged will handle the null user state.
+        setUserAuthState(prevState => ({ ...prevState, userError: error, isUserLoading: false }));
+    });
 
     const unsubscribe = onAuthStateChanged(
       auth,
