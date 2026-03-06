@@ -11,6 +11,7 @@ import {
   PlusCircle,
   PiggyBank,
   Trophy,
+  Eye,
 } from 'lucide-react';
 import {
   useUser,
@@ -187,7 +188,73 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="flex flex-col gap-6 lg:col-span-2">
-          <Card>
+
+          {/* ── MOBILE stats (hidden on md+) ── */}
+          <div className="md:hidden overflow-hidden rounded-xl border border-border">
+            {/* Hero balance */}
+            <div
+              className="relative overflow-hidden px-5 pt-5 pb-7"
+              style={{
+                background: 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.75) 100%)',
+              }}
+            >
+              {/* Subtle grid texture overlay */}
+              <div
+                className="pointer-events-none absolute inset-0 opacity-[0.06]"
+                style={{
+                  backgroundImage:
+                    'repeating-linear-gradient(0deg, transparent, transparent 24px, currentColor 24px, currentColor 25px), repeating-linear-gradient(90deg, transparent, transparent 24px, currentColor 24px, currentColor 25px)',
+                }}
+              />
+              <div className="relative flex items-start justify-between">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-primary-foreground/60 mb-2">
+                    Balanço do mês
+                  </p>
+                  <p
+                    className={cn(
+                      'font-headline text-[2.6rem] font-bold leading-none tracking-tight text-primary-foreground',
+                      finalBalance < 0 && 'text-red-300'
+                    )}
+                  >
+                    {formatCurrency(finalBalance)}
+                  </p>
+                </div>
+                <Eye className="size-4 text-primary-foreground/40 mt-1" />
+              </div>
+            </div>
+
+            {/* Three metrics row */}
+            <div className="grid grid-cols-3 divide-x divide-border bg-card">
+              <div className="px-3 py-4">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground mb-1.5">
+                  Receitas
+                </p>
+                <p className="text-sm font-bold text-primary leading-none">
+                  {formatCurrency(dashboardData.totalIncome)}
+                </p>
+              </div>
+              <div className="px-3 py-4">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground mb-1.5">
+                  Despesas
+                </p>
+                <p className="text-sm font-bold text-destructive leading-none">
+                  {formatCurrency(dashboardData.totalExpense)}
+                </p>
+              </div>
+              <div className="px-3 py-4">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground mb-1.5">
+                  Investido
+                </p>
+                <p className="text-sm font-bold text-chart-1 leading-none">
+                  {formatCurrency(dashboardData.invested)}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* ── DESKTOP stats card (hidden on mobile) — untouched ── */}
+          <Card className="hidden md:block">
             <CardContent className="flex flex-col p-0 md:flex-row md:items-center">
               <StatCard
                 title="Balanço"
@@ -217,6 +284,7 @@ export default function DashboardPage() {
               />
             </CardContent>
           </Card>
+
           <MonthlyBalanceChart data={monthlySummaries || []} />
           <RecentTransactions transactions={enrichedTransactions} />
         </div>
