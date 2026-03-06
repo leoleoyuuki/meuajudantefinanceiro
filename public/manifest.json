@@ -1,22 +1,36 @@
 {
   "name": "Meu Ajudante Financeiro",
-  "short_name": "FinAjudante",
+  "short_name": "AjudanteFi",
   "description": "Seu assistente pessoal para uma vida financeira organizada.",
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "/icon.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "/icon-512.png",
+      "src": "/icon.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
-  "theme_color": "#16a34a",
-  "background_color": "#f8fafc",
   "start_url": "/",
   "display": "standalone",
-  "orientation": "portrait"
+  "background_color": "#FBFBFE",
+  "theme_color": "#6D28D9",
+  "scope": "/"
 }

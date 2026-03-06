@@ -24,6 +24,7 @@ export const metadata: Metadata = {
   icons: {
     apple: '/icon.png',
   },
+  themeColor: '#6D28D9',
 };
 
 export default function RootLayout({
