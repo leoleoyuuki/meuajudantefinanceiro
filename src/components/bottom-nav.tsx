@@ -71,11 +71,11 @@ export function BottomNav() {
         </div>
 
         {/* Centered "Add" button */}
-        <div className="absolute inset-x-0 top-0 flex justify-center">
+        <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-center">
           <Link
             href="/add-transaction"
             className={cn(
-              'relative flex size-16 items-center justify-center rounded-full text-white shadow-lg transition-transform hover:scale-105',
+              'pointer-events-auto relative flex size-16 items-center justify-center rounded-full text-white shadow-lg transition-transform hover:scale-105',
               'overflow-hidden'
             )}
             style={{
