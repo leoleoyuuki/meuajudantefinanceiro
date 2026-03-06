@@ -20,6 +20,7 @@ import {
   Gift,
   LifeBuoy,
   Copy,
+  PiggyBank,
 } from 'lucide-react';
 import Link from 'next/link';
 import {
@@ -68,10 +69,20 @@ export function MobileHeader() {
   const annualPrice = 299.9;
   const discount = annualPrice * 0.15;
   const displayName = user?.displayName || 'Usuário';
+  const pageTitle = getPageTitle();
 
   return (
     <header className="sticky top-0 z-40 flex h-16 items-center justify-between bg-background/95 px-4 backdrop-blur-sm">
-      <h1 className="font-headline text-xl font-bold">{getPageTitle()}</h1>
+      {pageTitle ? (
+        <h1 className="font-headline text-xl font-bold">{pageTitle}</h1>
+      ) : (
+        <Link href="/" className="flex items-center gap-2 outline-none">
+          <PiggyBank className="size-7 text-primary" />
+          <span className="font-headline text-lg font-bold text-foreground">
+            MeuAjudante
+          </span>
+        </Link>
+      )}
 
       <div className="flex items-center gap-2">
         <Dialog>
