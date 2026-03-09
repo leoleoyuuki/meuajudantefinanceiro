@@ -333,7 +333,7 @@ export default function DashboardPage() {
               </div>
               <div className="px-3 py-4">
                 <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                  Investido
+                  Investido Mês
                 </p>
                 <p className="text-sm font-bold leading-none text-chart-1">
                   {formatCurrency(dashboardData.invested)}
@@ -367,7 +367,7 @@ export default function DashboardPage() {
               <div className="mx-2 hidden h-10 w-[1px] bg-border md:block" />
               <div className="my-1 h-[1px] w-full bg-border md:hidden" />
               <StatCard
-                title="Valor Investido"
+                title="Investido no Mês"
                 value={formatCurrency(dashboardData.invested)}
                 className="text-chart-1"
               />
