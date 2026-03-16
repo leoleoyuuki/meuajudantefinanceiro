@@ -2,7 +2,7 @@
 
 import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
 import { FirebaseApp } from 'firebase/app';
-import { Firestore, collection, doc, writeBatch, getDoc, setDoc } from 'firebase/firestore';
+import { Firestore, collection, doc, writeBatch, getDoc } from 'firebase/firestore';
 import { Auth, User, onAuthStateChanged, getRedirectResult } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
 import { defaultCategories } from '@/lib/default-categories';
@@ -107,17 +107,12 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
                 whatsapp: firebaseUser.phoneNumber || null,
                 role: role,
                 createdAt: now,
+                subscriptionStatus: 'inactive',
+                subscriptionExpiresAt: null,
+                subscriptionStartedAt: null,
+                subscriptionSourceCode: null,
               };
               batch.set(userRef, userProfileData);
-
-              const subscriptionRef = doc(firestore, 'users', firebaseUser.uid, 'subscriptions', 'current');
-              batch.set(subscriptionRef, {
-                  userId: firebaseUser.uid,
-                  status: 'inactive',
-                  expiresAt: null,
-                  startedAt: null,
-                  sourceCode: null,
-              });
 
               const categoriesRef = collection(firestore, 'users', firebaseUser.uid, 'categories');
               defaultCategories.forEach((category) => {

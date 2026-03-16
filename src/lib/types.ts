@@ -8,15 +8,11 @@ export type UserProfile = {
   whatsapp?: string | null;
   role: 'admin' | 'user';
   createdAt: string;
+  subscriptionStatus: 'active' | 'inactive' | 'expired';
+  subscriptionExpiresAt: string | null;
+  subscriptionStartedAt: string | null;
+  subscriptionSourceCode: string | null;
 };
-
-export type UserSubscription = {
-  userId: string;
-  status: 'active' | 'inactive' | 'expired';
-  expiresAt: string | null;
-  startedAt: string | null;
-  sourceCode: string | null;
-}
 
 export type ActivationCode = {
   id: string;

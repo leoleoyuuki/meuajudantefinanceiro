@@ -1,7 +1,7 @@
 'use client';
 
 import { Auth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, UserCredential } from "firebase/auth";
-import { Firestore, writeBatch, doc, collection, setDoc } from "firebase/firestore";
+import { Firestore, writeBatch, doc, collection } from "firebase/firestore";
 import { defaultCategories } from "@/lib/default-categories";
 
 interface SignUpData {
@@ -37,18 +37,13 @@ export async function signUpWithEmail(auth: Auth, firestore: Firestore, { name, 
         whatsapp: whatsapp,
         role: role,
         createdAt: now,
+        subscriptionStatus: 'inactive',
+        subscriptionExpiresAt: null,
+        subscriptionStartedAt: null,
+        subscriptionSourceCode: null,
     };
     batch.set(userRef, userProfileData);
 
-    const subscriptionRef = doc(firestore, 'users', user.uid, 'subscriptions', 'current');
-    batch.set(subscriptionRef, {
-        userId: user.uid,
-        status: 'inactive',
-        expiresAt: null,
-        startedAt: null,
-        sourceCode: null,
-    });
-    
     const categoriesRef = collection(firestore, 'users', user.uid, 'categories');
     defaultCategories.forEach((category) => {
         const newCategoryRef = doc(categoriesRef);

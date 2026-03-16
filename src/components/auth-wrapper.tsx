@@ -11,7 +11,7 @@ import { SidebarProvider } from './ui/sidebar';
 import { Header } from './header';
 import { MobileHeader } from './mobile-header';
 import { doc } from 'firebase/firestore';
-import type { UserProfile, UserSubscription } from '@/lib/types';
+import type { UserProfile } from '@/lib/types';
 import { isAfter } from 'date-fns';
 
 const ADMIN_EMAIL = 'leo.yuuki@icloud.com';
@@ -31,27 +31,27 @@ export default function AuthWrapper({
     () => (user ? doc(firestore, 'users', user.uid) : null),
     [firestore, user]
   );
-  const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileQuery);
-  
-  const userSubscriptionQuery = useMemoFirebase(
-    () => (user ? doc(firestore, 'users', user.uid, 'subscriptions', 'current') : null),
-    [firestore, user]
-  );
-  const { data: userSubscription, isLoading: isSubscriptionLoading } = useDoc<UserSubscription>(userSubscriptionQuery);
+  const { data: userProfile, isLoading: isProfileLoading } =
+    useDoc<UserProfile>(userProfileQuery);
 
   const isAdmin = user?.email === ADMIN_EMAIL;
-  
+
   const subscriptionStatus = useMemo(() => {
     if (isAdmin) return 'active';
-    if (!userSubscription) return 'inactive';
-    if (userSubscription.status === 'active' && userSubscription.expiresAt) {
-      return isAfter(new Date(), new Date(userSubscription.expiresAt)) ? 'expired' : 'active';
+    if (!userProfile) return 'inactive';
+    if (
+      userProfile.subscriptionStatus === 'active' &&
+      userProfile.subscriptionExpiresAt
+    ) {
+      return isAfter(new Date(), new Date(userProfile.subscriptionExpiresAt))
+        ? 'expired'
+        : 'active';
     }
-    return 'inactive';
-  }, [userSubscription, isAdmin]);
+    return userProfile.subscriptionStatus || 'inactive';
+  }, [userProfile, isAdmin]);
 
   useEffect(() => {
-    if (isUserLoading || isProfileLoading || (user && isSubscriptionLoading)) {
+    if (isUserLoading || (user && isProfileLoading)) {
       return; // Wait until all data is loaded
     }
 
@@ -67,17 +67,25 @@ export default function AuthWrapper({
         router.replace('/');
         return;
       }
-      
+
       // If user profile is loaded and has no whatsapp, go to complete profile page
-      if (userProfile && !userProfile.whatsapp && pathname !== '/complete-profile') {
+      if (
+        userProfile &&
+        !userProfile.whatsapp &&
+        pathname !== '/complete-profile'
+      ) {
         router.replace('/complete-profile');
         return;
       }
 
       // If user has completed profile but subscription is not active, redirect to activate
-      if (userProfile?.whatsapp && subscriptionStatus !== 'active' && pathname !== '/activate') {
-         router.replace('/activate');
-         return;
+      if (
+        userProfile?.whatsapp &&
+        subscriptionStatus !== 'active' &&
+        pathname !== '/activate'
+      ) {
+        router.replace('/activate');
+        return;
       }
 
       // If user has active subscription but is on activate page, redirect to home
@@ -86,10 +94,17 @@ export default function AuthWrapper({
         return;
       }
     }
+  }, [
+    user,
+    isUserLoading,
+    isProfileLoading,
+    userProfile,
+    subscriptionStatus,
+    router,
+    pathname,
+  ]);
 
-  }, [user, isUserLoading, isProfileLoading, isSubscriptionLoading, userProfile, subscriptionStatus, router, pathname]);
-
-  const isLoading = isUserLoading || (user && (isProfileLoading || isSubscriptionLoading));
+  const isLoading = isUserLoading || (user && isProfileLoading);
 
   const unprotectedPaths = ['/login', '/complete-profile', '/activate'];
 
@@ -104,15 +119,19 @@ export default function AuthWrapper({
 
   // If on a page that doesn't require the full layout, just render children
   if (unprotectedPaths.includes(pathname)) {
-     if (pathname === '/activate' && subscriptionStatus === 'active' && !isLoading) {
-        // This is a flicker case where user lands on activate but should be home.
-        // The useEffect will redirect, but we can show a loader to make it smoother.
-         return (
-          <div className="flex h-screen w-full items-center justify-center bg-background">
-            <Loader2 className="h-8 w-8 animate-spin" />
-          </div>
-        );
-     }
+    if (
+      pathname === '/activate' &&
+      subscriptionStatus === 'active' &&
+      !isLoading
+    ) {
+      // This is a flicker case where user lands on activate but should be home.
+      // The useEffect will redirect, but we can show a loader to make it smoother.
+      return (
+        <div className="flex h-screen w-full items-center justify-center bg-background">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      );
+    }
     return <>{children}</>;
   }
 
@@ -143,8 +162,8 @@ export default function AuthWrapper({
 
   // Fallback for any weird edge cases
   return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
+    <div className="flex h-screen w-full items-center justify-center bg-background">
+      <Loader2 className="h-8 w-8 animate-spin" />
+    </div>
+  );
 }

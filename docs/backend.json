@@ -3,7 +3,7 @@
     "UserProfile": {
       "title": "User Profile",
       "type": "object",
-      "description": "Represents a user's profile information.",
+      "description": "Represents a user's profile information and subscription status.",
       "properties": {
         "uid": {
           "type": "string",
@@ -34,45 +34,31 @@
         "createdAt": {
           "type": "string",
           "format": "date-time"
-        }
-      },
-      "required": [
-        "uid",
-        "createdAt",
-        "role"
-      ]
-    },
-    "UserSubscription": {
-      "title": "User Subscription",
-      "type": "object",
-      "description": "Represents a user's subscription status.",
-      "properties": {
-        "userId": {
-          "type": "string",
-          "description": "The user's unique ID."
         },
-        "status": {
+        "subscriptionStatus": {
           "type": "string",
-          "description": "The status of the subscription ('active', 'inactive', 'expired')."
+          "description": "The status of the user's subscription ('active', 'inactive', 'expired')."
         },
-        "expiresAt": {
+        "subscriptionExpiresAt": {
           "type": "string",
           "format": "date-time",
           "description": "The date and time when the subscription expires."
         },
-        "startedAt": {
+        "subscriptionStartedAt": {
           "type": "string",
           "format": "date-time",
           "description": "The date and time when the subscription started."
         },
-        "sourceCode": {
+        "subscriptionSourceCode": {
           "type": "string",
           "description": "The activation code used for this subscription."
         }
       },
       "required": [
-        "userId",
-        "status"
+        "uid",
+        "createdAt",
+        "role",
+        "subscriptionStatus"
       ]
     },
     "ActivationCode": {
@@ -604,27 +590,7 @@
           "schema": {
             "$ref": "#/backend/entities/UserProfile"
           },
-          "description": "Stores profile information for a user, created on first login."
-        }
-      },
-       {
-        "path": "/users/{userId}/subscriptions/{subscriptionId}",
-        "definition": {
-          "entityName": "UserSubscription",
-          "schema": {
-            "$ref": "#/backend/entities/UserSubscription"
-          },
-          "description": "Stores a user's subscription details. The subscriptionId is typically 'current'.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the User."
-            },
-            {
-              "name": "subscriptionId",
-              "description": "The unique identifier for the subscription document (e.g., 'current')."
-            }
-          ]
+          "description": "Stores profile information and subscription status for a user."
         }
       },
       {

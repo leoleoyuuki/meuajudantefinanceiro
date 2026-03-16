@@ -62,13 +62,7 @@ export default function ActivatePage() {
     const code = data.code;
 
     const codeRef = doc(firestore, 'activationCodes', code);
-    const userSubscriptionRef = doc(
-      firestore,
-      'users',
-      userId,
-      'subscriptions',
-      'current'
-    );
+    const userProfileRef = doc(firestore, 'users', userId);
 
     try {
       const result = await runTransaction(firestore, async (transaction) => {
@@ -86,15 +80,14 @@ export default function ActivatePage() {
         const now = new Date();
         const expiresAt = addMonths(now, codeData?.durationMonths);
 
-        const subscriptionData = {
-          userId: userId,
-          status: 'active',
-          expiresAt: expiresAt.toISOString(),
-          startedAt: now.toISOString(),
-          sourceCode: code,
+        const subscriptionUpdateData = {
+          subscriptionStatus: 'active',
+          subscriptionExpiresAt: expiresAt.toISOString(),
+          subscriptionStartedAt: now.toISOString(),
+          subscriptionSourceCode: code,
         };
 
-        transaction.set(userSubscriptionRef, subscriptionData);
+        transaction.update(userProfileRef, subscriptionUpdateData);
 
         transaction.update(codeRef, {
           isUsed: true,
