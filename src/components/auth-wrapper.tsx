@@ -2,7 +2,7 @@
 
 import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { useRouter, usePathname } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Loader2 } from 'lucide-react';
 import { BottomNav } from './bottom-nav';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -11,7 +11,10 @@ import { SidebarProvider } from './ui/sidebar';
 import { Header } from './header';
 import { MobileHeader } from './mobile-header';
 import { doc } from 'firebase/firestore';
-import type { UserProfile } from '@/lib/types';
+import type { UserProfile, UserSubscription } from '@/lib/types';
+import { isAfter } from 'date-fns';
+
+const ADMIN_EMAIL = 'leo.yuuki@icloud.com';
 
 export default function AuthWrapper({
   children,
@@ -28,37 +31,70 @@ export default function AuthWrapper({
     () => (user ? doc(firestore, 'users', user.uid) : null),
     [firestore, user]
   );
-  const { data: userProfile, isLoading: isProfileLoading } =
-    useDoc<UserProfile>(userProfileQuery);
+  const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileQuery);
+  
+  const userSubscriptionQuery = useMemoFirebase(
+    () => (user ? doc(firestore, 'users', user.uid, 'subscriptions', 'current') : null),
+    [firestore, user]
+  );
+  const { data: userSubscription, isLoading: isSubscriptionLoading } = useDoc<UserSubscription>(userSubscriptionQuery);
+
+  const isAdmin = user?.email === ADMIN_EMAIL;
+  
+  const subscriptionStatus = useMemo(() => {
+    if (isAdmin) return 'active';
+    if (!userSubscription) return 'inactive';
+    if (userSubscription.status === 'active' && userSubscription.expiresAt) {
+      return isAfter(new Date(), new Date(userSubscription.expiresAt)) ? 'expired' : 'active';
+    }
+    return 'inactive';
+  }, [userSubscription, isAdmin]);
 
   useEffect(() => {
-    // If not loading and no user, go to login (if not already there)
-    if (!isUserLoading && !user && pathname !== '/login') {
+    if (isUserLoading || isProfileLoading || (user && isSubscriptionLoading)) {
+      return; // Wait until all data is loaded
+    }
+
+    // If not loading and no user, go to login (if not already there or on special pages)
+    if (!user && !['/login', '/activate'].includes(pathname)) {
       router.replace('/login');
+      return;
     }
-    // If user is logged in and on login page, go to home
-    if (!isUserLoading && user && pathname === '/login') {
-      router.replace('/');
-    }
-    // If user profile is loaded and has no phone, go to complete profile page
-    if (
-      user &&
-      userProfile &&
-      !userProfile.phone &&
-      pathname !== '/complete-profile'
-    ) {
-      router.replace('/complete-profile');
-    }
-  }, [user, isUserLoading, router, pathname, userProfile]);
 
-  const isLoading = isUserLoading || (user && isProfileLoading);
+    // If user is logged in...
+    if (user) {
+      if (pathname === '/login') {
+        router.replace('/');
+        return;
+      }
+      
+      // If user profile is loaded and has no whatsapp, go to complete profile page
+      if (userProfile && !userProfile.whatsapp && pathname !== '/complete-profile') {
+        router.replace('/complete-profile');
+        return;
+      }
 
-  // If we are loading any of the critical data, show a spinner.
-  // Also show spinner if we're on a protected route without a user (before redirect kicks in).
-  if (
-    isLoading ||
-    (!user && !['/login', '/complete-profile'].includes(pathname))
-  ) {
+      // If user has completed profile but subscription is not active, redirect to activate
+      if (userProfile?.whatsapp && subscriptionStatus !== 'active' && pathname !== '/activate') {
+         router.replace('/activate');
+         return;
+      }
+
+      // If user has active subscription but is on activate page, redirect to home
+      if (subscriptionStatus === 'active' && pathname === '/activate') {
+        router.replace('/');
+        return;
+      }
+    }
+
+  }, [user, isUserLoading, isProfileLoading, isSubscriptionLoading, userProfile, subscriptionStatus, router, pathname]);
+
+  const isLoading = isUserLoading || (user && (isProfileLoading || isSubscriptionLoading));
+
+  const unprotectedPaths = ['/login', '/complete-profile', '/activate'];
+
+  // Show a global loader while we determine the user's auth/profile/subscription state
+  if (isLoading && !unprotectedPaths.includes(pathname)) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -66,13 +102,22 @@ export default function AuthWrapper({
     );
   }
 
-  // If user is on a public/special page, render it without layout
-  if (pathname === '/login' || pathname === '/complete-profile') {
+  // If on a page that doesn't require the full layout, just render children
+  if (unprotectedPaths.includes(pathname)) {
+     if (pathname === '/activate' && subscriptionStatus === 'active' && !isLoading) {
+        // This is a flicker case where user lands on activate but should be home.
+        // The useEffect will redirect, but we can show a loader to make it smoother.
+         return (
+          <div className="flex h-screen w-full items-center justify-center bg-background">
+            <Loader2 className="h-8 w-8 animate-spin" />
+          </div>
+        );
+     }
     return <>{children}</>;
   }
 
-  // At this point, we have a user with a complete profile. Render the full app layout.
-  if (user && userProfile?.phone) {
+  // At this point, we have a user with a complete profile and active subscription. Render the full app layout.
+  if (user && userProfile?.whatsapp && subscriptionStatus === 'active') {
     if (isMobile) {
       return (
         <div className="relative flex min-h-screen w-full flex-col bg-background">
@@ -97,5 +142,9 @@ export default function AuthWrapper({
   }
 
   // Fallback for any weird edge cases
-  return null;
+  return (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
 }

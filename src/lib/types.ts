@@ -5,9 +5,27 @@ export type UserProfile = {
   email: string | null;
   displayName: string | null;
   photoURL: string | null;
-  phone?: string | null;
+  whatsapp?: string | null;
+  role: 'admin' | 'user';
   createdAt: string;
 };
+
+export type UserSubscription = {
+  userId: string;
+  status: 'active' | 'inactive' | 'expired';
+  expiresAt: string | null;
+  startedAt: string | null;
+  sourceCode: string | null;
+}
+
+export type ActivationCode = {
+  id: string;
+  durationMonths: number;
+  isUsed: boolean;
+  usedBy: string | null;
+  usedAt: string | null;
+  createdAt: string;
+}
 
 export type Transaction = {
   id: string;

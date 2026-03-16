@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useAuth, useFirestore } from '@/firebase';
+import { useAuth, useFirestore, useFirebase } from '@/firebase';
 import {
   signUpWithEmail,
   signInWithEmail,
@@ -35,6 +35,10 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { PiggyBank, Loader2 } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
+import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
+import { signInWithCredential, GoogleAuthProvider } from 'firebase/auth';
+
 
 const loginSchema = z.object({
   email: z.string().email({ message: 'Por favor, insira um e-mail válido.' }),
@@ -46,7 +50,7 @@ const loginSchema = z.object({
 const signUpSchema = z
   .object({
     name: z.string().min(2, { message: 'O nome deve ter pelo menos 2 caracteres.' }),
-    phone: z.string().min(10, { message: 'Por favor, insira um telefone válido.' }),
+    whatsapp: z.string().min(10, { message: 'Por favor, insira um WhatsApp válido.' }),
     email: z.string().email({ message: 'Por favor, insira um e-mail válido.' }),
     password: z
       .string()
@@ -78,8 +82,7 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
-  const auth = useAuth();
-  const firestore = useFirestore();
+  const { auth, firestore } = useFirebase();
   const { toast } = useToast();
 
   const loginForm = useForm<LoginFormValues>({
@@ -89,12 +92,38 @@ export default function LoginPage() {
 
   const signUpForm = useForm<SignUpFormValues>({
     resolver: zodResolver(signUpSchema),
-    defaultValues: { name: '', phone: '', email: '', password: '', confirmPassword: '' },
+    defaultValues: { name: '', whatsapp: '', email: '', password: '', confirmPassword: '' },
   });
 
-  const handleGoogleLogin = () => {
-    if (auth) {
+  const handleGoogleLogin = async () => {
+    if (!auth) return;
+    setIsLoading(true);
+
+    if (Capacitor.getPlatform() === 'web') {
       initiateGoogleSignIn(auth);
+      // For web, loading state might be handled differently post-redirect
+      setIsLoading(false); 
+    } else {
+      // Native platform flow
+      try {
+        const result = await FirebaseAuthentication.signInWithGoogle();
+        if (result.credential?.idToken) {
+            const credential = GoogleAuthProvider.credential(result.credential.idToken);
+            await signInWithCredential(auth, credential);
+            // AuthWrapper will handle redirection
+        } else {
+            throw new Error("O login nativo com Google não retornou um token.");
+        }
+      } catch (error) {
+        console.error('Erro no login nativo com Google:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Erro no login',
+          description: 'Não foi possível fazer login com o Google no momento.',
+        });
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -230,10 +259,10 @@ export default function LoginPage() {
                   />
                   <FormField
                     control={signUpForm.control}
-                    name="phone"
+                    name="whatsapp"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Telefone</FormLabel>
+                        <FormLabel>WhatsApp</FormLabel>
                         <FormControl>
                           <Input placeholder="(11) 99999-9999" {...field} />
                         </FormControl>

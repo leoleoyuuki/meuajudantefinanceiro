@@ -20,6 +20,7 @@ import {
   LogOut,
   MoreHorizontal,
   LifeBuoy,
+  Shield,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -43,14 +44,19 @@ const navItems = [
   { href: '/categories', icon: Tags, label: 'Categorias' },
 ];
 
+const ADMIN_EMAIL = 'leo.yuuki@icloud.com';
+
 export function AppSidebar() {
   const pathname = usePathname();
   const { user } = useUser();
   const auth = useAuth();
+  const isAdmin = user?.email === ADMIN_EMAIL;
 
   const handleLogout = () => {
     if (auth) {
-      signOut(auth);
+      signOut(auth).then(() => {
+        window.location.href = '/login';
+      });
     }
   };
 
@@ -167,6 +173,23 @@ export function AppSidebar() {
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
+           {isAdmin && (
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname === '/admin'}
+                tooltip="Admin"
+                className="h-9 justify-start gap-2 px-2 group-data-[collapsible=icon]:justify-center"
+              >
+                <Link href="/admin">
+                  <Shield className="size-4 shrink-0" />
+                  <span className="group-data-[collapsible=icon]:hidden">
+                    Admin
+                  </span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
         </SidebarMenu>
       </SidebarContent>
 

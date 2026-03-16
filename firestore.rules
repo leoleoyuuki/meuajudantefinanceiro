@@ -74,16 +74,44 @@ service cloud.firestore {
     function isUidFieldImmutable() {
       return request.resource.data.uid == resource.data.uid;
     }
+    
+    /**
+     * Checks if the authenticated user has an 'admin' role.
+     */
+    function isAdmin() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
 
     /**
      * @description Grants access to a user's own profile document.
      * @path /users/{userId}
      */
     match /users/{userId} {
-      allow get: if isOwner(userId);
+      allow get: if isOwner(userId) || isAdmin();
       allow create: if isOwner(userId) && isCreatingOwnProfile(userId);
-      allow update: if isExistingOwner(userId) && isUidFieldImmutable();
+      allow update: if (isExistingOwner(userId) && isUidFieldImmutable()) || isAdmin();
       allow delete: if false; // Disallow client-side profile deletion
+    }
+    
+    /**
+     * @description Grants access to a user's own subscription document.
+     * @path /users/{userId}/subscriptions/{subId}
+     */
+    match /users/{userId}/subscriptions/{subId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isOwner(userId) || isAdmin();
+      // Only server-side logic (actions) should write to subscriptions
+      allow write: if false; 
+    }
+
+    /**
+     * @description Grants access to activation codes.
+     * @path /activationCodes/{codeId}
+     */
+    match /activationCodes/{codeId} {
+      // Only admins can read/write activation codes.
+      // Activation is handled by a trusted server action.
+      allow read, write: if isAdmin();
     }
 
     /**
@@ -95,6 +123,9 @@ service cloud.firestore {
      * @principle Restricts all access to a user's own data tree, enforcing data isolation and privacy.
      */
     match /users/{userId}/{collection}/{docId} {
+      // This rule should not match /subscriptions because it has its own rule
+      // However, Firestore rules do not support negative matches in wildcards.
+      // The most specific rule wins, so the /subscriptions/{subId} rule will take precedence.
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
       allow create: if isOwner(userId) && isCreatingOwnContent(userId);
@@ -103,5 +134,3 @@ service cloud.firestore {
     }
   }
 }
-
-    

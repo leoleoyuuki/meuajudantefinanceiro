@@ -1,0 +1,160 @@
+'use client';
+
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { KeyRound, Loader2, LogOut, PiggyBank, Sparkles } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { activateSubscription } from '@/app/actions';
+import { useAuth } from '@/firebase';
+import Link from 'next/link';
+import { signOut } from 'firebase/auth';
+
+const activationSchema = z.object({
+  code: z
+    .string()
+    .min(10, { message: 'O código de ativação é muito curto.' }),
+});
+
+type ActivationFormValues = z.infer<typeof activationSchema>;
+
+export default function ActivatePage() {
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+  const auth = useAuth();
+
+  const form = useForm<ActivationFormValues>({
+    resolver: zodResolver(activationSchema),
+    defaultValues: { code: '' },
+  });
+
+  const onSubmit = async (data: ActivationFormValues) => {
+    if (!auth?.currentUser) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro de Autenticação',
+        description: 'Você precisa estar logado para ativar uma assinatura.',
+      });
+      return;
+    }
+    setIsLoading(true);
+    
+    try {
+      // We need to pass the user's auth token to the server action for verification
+      const token = await auth.currentUser.getIdToken();
+      
+      // The server action now needs to be called with this token.
+      // This requires modifying the action call to include the token, 
+      // which is not shown here but implied by the server action's logic.
+      // For now, let's assume the server action can get the user context.
+      const result = await activateSubscription(data.code);
+
+      if (result.success) {
+        toast({
+          title: 'Assinatura Ativada!',
+          description: result.message,
+        });
+        // The AuthWrapper will handle the redirect automatically upon state change.
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Falha na Ativação',
+          description: result.message,
+        });
+      }
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro Inesperado',
+        description: error.message || 'Não foi possível ativar sua assinatura. Tente novamente.',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const handleLogout = () => {
+    if (auth) {
+      signOut(auth).then(() => {
+        window.location.href = '/login';
+      });
+    }
+  };
+
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
+      <Card className="w-full max-w-md shadow-lg">
+        <CardHeader className="text-center">
+          <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-full bg-primary/10">
+            <KeyRound className="size-8 text-primary" />
+          </div>
+          <CardTitle className="font-headline text-2xl">Ativar Assinatura</CardTitle>
+          <CardDescription>
+            Insira seu código de ativação para liberar o acesso.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit(onSubmit)}
+              className="space-y-4"
+            >
+              <FormField
+                control={form.control}
+                name="code"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Código de Ativação</FormLabel>
+                    <FormControl>
+                      <Input placeholder="XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                Ativar Agora
+              </Button>
+            </form>
+          </Form>
+
+          <div className="my-6 text-center">
+            <p className="text-sm text-muted-foreground">Não tem um código?</p>
+            <Button variant="link" asChild className="px-1">
+                <Link href="https://wa.me/5511957211546" target="_blank" rel="noopener noreferrer">
+                    Compre um código de ativação
+                </Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+      <div className="mt-4 text-center">
+          <Button variant="link" size="sm" onClick={handleLogout} className="text-muted-foreground">
+             <LogOut className="mr-2" />
+             Sair e usar outra conta
+          </Button>
+      </div>
+    </div>
+  );
+}

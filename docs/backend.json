@@ -23,9 +23,13 @@
           "format": "uri",
           "description": "URL of the user's profile picture."
         },
-        "phone": {
+        "whatsapp": {
           "type": "string",
-          "description": "The user's phone number."
+          "description": "The user's WhatsApp number."
+        },
+        "role": {
+          "type": "string",
+          "description": "The role of the user ('admin' or 'user')."
         },
         "createdAt": {
           "type": "string",
@@ -34,6 +38,79 @@
       },
       "required": [
         "uid",
+        "createdAt",
+        "role"
+      ]
+    },
+    "UserSubscription": {
+      "title": "User Subscription",
+      "type": "object",
+      "description": "Represents a user's subscription status.",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The user's unique ID."
+        },
+        "status": {
+          "type": "string",
+          "description": "The status of the subscription ('active', 'inactive', 'expired')."
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date and time when the subscription expires."
+        },
+        "startedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date and time when the subscription started."
+        },
+        "sourceCode": {
+          "type": "string",
+          "description": "The activation code used for this subscription."
+        }
+      },
+      "required": [
+        "userId",
+        "status"
+      ]
+    },
+    "ActivationCode": {
+      "title": "Activation Code",
+      "type": "object",
+      "description": "Represents a one-time code to activate a user subscription.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The unique ID of the activation code."
+        },
+        "durationMonths": {
+          "type": "number",
+          "description": "How many months of subscription this code provides."
+        },
+        "isUsed": {
+          "type": "boolean",
+          "description": "Whether the code has been used."
+        },
+        "usedBy": {
+          "type": "string",
+          "description": "The UID of the user who used this code."
+        },
+        "usedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the code was used."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the code was created."
+        }
+      },
+      "required": [
+        "id",
+        "durationMonths",
+        "isUsed",
         "createdAt"
       ]
     },
@@ -528,6 +605,42 @@
             "$ref": "#/backend/entities/UserProfile"
           },
           "description": "Stores profile information for a user, created on first login."
+        }
+      },
+       {
+        "path": "/users/{userId}/subscriptions/{subscriptionId}",
+        "definition": {
+          "entityName": "UserSubscription",
+          "schema": {
+            "$ref": "#/backend/entities/UserSubscription"
+          },
+          "description": "Stores a user's subscription details. The subscriptionId is typically 'current'.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the User."
+            },
+            {
+              "name": "subscriptionId",
+              "description": "The unique identifier for the subscription document (e.g., 'current')."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/activationCodes/{codeId}",
+        "definition": {
+          "entityName": "ActivationCode",
+          "schema": {
+            "$ref": "#/backend/entities/ActivationCode"
+          },
+          "description": "Stores one-time use codes for activating subscriptions. The document ID is the code itself.",
+          "params": [
+            {
+              "name": "codeId",
+              "description": "The unique activation code string."
+            }
+          ]
         }
       },
       {

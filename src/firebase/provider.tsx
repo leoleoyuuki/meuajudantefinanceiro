@@ -2,7 +2,7 @@
 
 import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
 import { FirebaseApp } from 'firebase/app';
-import { Firestore, collection, doc, getDocs, limit, writeBatch, getDoc, setDoc } from 'firebase/firestore';
+import { Firestore, collection, doc, writeBatch, getDoc, setDoc } from 'firebase/firestore';
 import { Auth, User, onAuthStateChanged, getRedirectResult } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
 import { defaultCategories } from '@/lib/default-categories';
@@ -50,6 +50,8 @@ export interface UserHookResult { // Renamed from UserAuthHookResult for consist
   userError: Error | null;
 }
 
+const ADMIN_EMAIL = 'leo.yuuki@icloud.com';
+
 // React Context
 export const FirebaseContext = createContext<FirebaseContextState | undefined>(undefined);
 
@@ -95,22 +97,31 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
             try {
               const batch = writeBatch(firestore);
               const now = new Date().toISOString();
+              const role = firebaseUser.email === ADMIN_EMAIL ? 'admin' : 'user';
 
-              // 1. Create user profile document for social logins
               const userProfileData = {
                 uid: firebaseUser.uid,
                 email: firebaseUser.email,
                 displayName: firebaseUser.displayName,
                 photoURL: firebaseUser.photoURL,
-                phone: firebaseUser.phoneNumber || null,
+                whatsapp: firebaseUser.phoneNumber || null,
+                role: role,
                 createdAt: now,
               };
               batch.set(userRef, userProfileData);
 
-              // 2. Create default categories
+              const subscriptionRef = doc(firestore, 'users', firebaseUser.uid, 'subscriptions', 'current');
+              batch.set(subscriptionRef, {
+                  userId: firebaseUser.uid,
+                  status: 'inactive',
+                  expiresAt: null,
+                  startedAt: null,
+                  sourceCode: null,
+              });
+
               const categoriesRef = collection(firestore, 'users', firebaseUser.uid, 'categories');
               defaultCategories.forEach((category) => {
-                const newCategoryRef = doc(categoriesRef); // Let firestore generate ID
+                const newCategoryRef = doc(categoriesRef);
                 batch.set(newCategoryRef, {
                   ...category,
                   id: newCategoryRef.id,

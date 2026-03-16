@@ -21,6 +21,7 @@ import {
   LifeBuoy,
   Copy,
   PiggyBank,
+  Shield,
 } from 'lucide-react';
 import Link from 'next/link';
 import {
@@ -35,15 +36,21 @@ import { useToast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/lib/utils';
 import { Button } from './ui/button';
 
+const ADMIN_EMAIL = 'leo.yuuki@icloud.com';
+
 export function MobileHeader() {
   const pathname = usePathname();
   const { user } = useUser();
   const auth = useAuth();
   const { toast } = useToast();
+  const isAdmin = user?.email === ADMIN_EMAIL;
 
   const handleLogout = () => {
     if (auth) {
-      signOut(auth);
+      signOut(auth).then(() => {
+        // Redirect to login page after sign out
+        window.location.href = '/login';
+      });
     }
   };
 
@@ -56,6 +63,7 @@ export function MobileHeader() {
     if (pathname.startsWith('/categories')) return 'Categorias';
     if (pathname.startsWith('/settings')) return 'Configurações';
     if (pathname.startsWith('/help')) return 'Ajuda';
+    if (pathname.startsWith('/admin')) return 'Admin';
     return 'Meu Ajudante';
   };
 
@@ -146,6 +154,14 @@ export function MobileHeader() {
               </p>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+             {isAdmin && (
+              <DropdownMenuItem asChild>
+                <Link href="/admin">
+                  <Shield className="mr-2 h-4 w-4" />
+                  <span>Admin</span>
+                </Link>
+              </DropdownMenuItem>
+            )}
             <Dialog>
               <DialogTrigger asChild>
                 <DropdownMenuItem onSelect={(e) => e.preventDefault()}>

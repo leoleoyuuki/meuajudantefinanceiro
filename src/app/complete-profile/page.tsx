@@ -27,9 +27,9 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 
 const profileSchema = z.object({
-  phone: z
+  whatsapp: z
     .string()
-    .min(10, { message: 'Por favor, insira um telefone válido.' }),
+    .min(10, { message: 'Por favor, insira um WhatsApp válido.' }),
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
@@ -43,7 +43,7 @@ export default function CompleteProfilePage() {
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
-    defaultValues: { phone: '' },
+    defaultValues: { whatsapp: '' },
   });
 
   const onSubmit = async (data: ProfileFormValues) => {
@@ -54,19 +54,19 @@ export default function CompleteProfilePage() {
 
     try {
       await updateDoc(userRef, {
-        phone: data.phone,
+        whatsapp: data.whatsapp,
         updatedAt: new Date().toISOString(),
       });
       toast({
         title: 'Perfil atualizado!',
-        description: 'Seu número de telefone foi salvo.',
+        description: 'Seu número de WhatsApp foi salvo.',
       });
       router.push('/');
     } catch (error: any) {
       toast({
         variant: 'destructive',
         title: 'Erro ao atualizar perfil',
-        description: 'Não foi possível salvar seu telefone. Tente novamente.',
+        description: 'Não foi possível salvar seu WhatsApp. Tente novamente.',
       });
     } finally {
       setIsLoading(false);
@@ -82,7 +82,7 @@ export default function CompleteProfilePage() {
           </div>
           <CardTitle className="font-headline text-2xl">Quase lá!</CardTitle>
           <CardDescription>
-            Por favor, informe seu número de telefone para continuar.
+            Por favor, informe seu número de WhatsApp para continuar.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -93,10 +93,10 @@ export default function CompleteProfilePage() {
             >
               <FormField
                 control={form.control}
-                name="phone"
+                name="whatsapp"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Telefone</FormLabel>
+                    <FormLabel>WhatsApp</FormLabel>
                     <FormControl>
                       <Input placeholder="(11) 99999-9999" {...field} />
                     </FormControl>
