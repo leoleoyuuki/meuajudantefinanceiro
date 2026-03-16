@@ -1,7 +1,13 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { useUser, useAuth } from '@/firebase';
+import {
+  useUser,
+  useAuth,
+  useFirestore,
+  useDoc,
+  useMemoFirebase,
+} from '@/firebase';
 import { signOut } from 'firebase/auth';
 import {
   DropdownMenu,
@@ -35,6 +41,10 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/lib/utils';
 import { Button } from './ui/button';
+import { doc } from 'firebase/firestore';
+import type { UserProfile } from '@/lib/types';
+import { differenceInDays, isAfter } from 'date-fns';
+import React from 'react';
 
 const ADMIN_EMAIL = 'leo.yuuki@icloud.com';
 
@@ -42,8 +52,60 @@ export function MobileHeader() {
   const pathname = usePathname();
   const { user } = useUser();
   const auth = useAuth();
+  const firestore = useFirestore();
   const { toast } = useToast();
   const isAdmin = user?.email === ADMIN_EMAIL;
+
+  const userProfileQuery = useMemoFirebase(
+    () => (user ? doc(firestore, 'users', user.uid) : null),
+    [firestore, user]
+  );
+  const { data: userProfile } = useDoc<UserProfile>(userProfileQuery);
+
+  const subscriptionDetails = React.useMemo(() => {
+    if (isAdmin) {
+      return {
+        message: 'Você tem acesso vitalício de administrador.',
+      };
+    }
+
+    if (
+      !userProfile ||
+      !userProfile.subscriptionStatus ||
+      userProfile.subscriptionStatus === 'inactive'
+    ) {
+      return {
+        message: 'Sua assinatura não está ativa.',
+      };
+    }
+
+    if (userProfile.subscriptionExpiresAt) {
+      const expiresAt = new Date(userProfile.subscriptionExpiresAt);
+      if (isAfter(new Date(), expiresAt)) {
+        return {
+          message: 'Sua assinatura expirou.',
+        };
+      }
+
+      const remainingDays = differenceInDays(expiresAt, new Date());
+      return {
+        message: (
+          <>
+            Você tem{' '}
+            <strong>
+              {remainingDays}{' '}
+              {remainingDays === 1 ? 'dia restante' : 'dias restantes'}
+            </strong>{' '}
+            em sua assinatura.
+          </>
+        ),
+      };
+    }
+
+    return {
+      message: 'Não foi possível verificar o status da sua assinatura.',
+    };
+  }, [userProfile, isAdmin]);
 
   const handleLogout = () => {
     if (auth) {
@@ -154,7 +216,7 @@ export function MobileHeader() {
               </p>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-             {isAdmin && (
+            {isAdmin && (
               <DropdownMenuItem asChild>
                 <Link href="/admin">
                   <Shield className="mr-2 h-4 w-4" />
@@ -175,9 +237,7 @@ export function MobileHeader() {
                     <Crown /> Premium
                   </DialogTitle>
                 </DialogHeader>
-                <div className="text-sm">
-                  Você tem <strong>30 dias</strong> restantes em seu teste.
-                </div>
+                <div className="text-sm">{subscriptionDetails.message}</div>
               </DialogContent>
             </Dialog>
 

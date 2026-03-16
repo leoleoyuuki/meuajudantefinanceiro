@@ -15,7 +15,13 @@ import {
 } from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/lib/utils';
-import { useAuth, useUser } from '@/firebase';
+import {
+  useAuth,
+  useUser,
+  useFirestore,
+  useDoc,
+  useMemoFirebase,
+} from '@/firebase';
 import { signOut } from 'firebase/auth';
 import {
   DropdownMenu,
@@ -25,11 +31,71 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { doc } from 'firebase/firestore';
+import type { UserProfile } from '@/lib/types';
+import { differenceInDays, isAfter } from 'date-fns';
+import React from 'react';
+
+const ADMIN_EMAIL = 'leo.yuuki@icloud.com';
 
 export function Header() {
   const { toast } = useToast();
   const auth = useAuth();
   const { user } = useUser();
+  const firestore = useFirestore();
+
+  const userProfileQuery = useMemoFirebase(
+    () => (user ? doc(firestore, 'users', user.uid) : null),
+    [firestore, user]
+  );
+  const { data: userProfile } = useDoc<UserProfile>(userProfileQuery);
+
+  const isAdmin = user?.email === ADMIN_EMAIL;
+
+  const subscriptionDetails = React.useMemo(() => {
+    if (isAdmin) {
+      return {
+        message: 'Você tem acesso vitalício de administrador.',
+      };
+    }
+
+    if (
+      !userProfile ||
+      !userProfile.subscriptionStatus ||
+      userProfile.subscriptionStatus === 'inactive'
+    ) {
+      return {
+        message: 'Sua assinatura não está ativa.',
+      };
+    }
+
+    if (userProfile.subscriptionExpiresAt) {
+      const expiresAt = new Date(userProfile.subscriptionExpiresAt);
+      if (isAfter(new Date(), expiresAt)) {
+        return {
+          message: 'Sua assinatura expirou.',
+        };
+      }
+
+      const remainingDays = differenceInDays(expiresAt, new Date());
+      return {
+        message: (
+          <>
+            Você tem{' '}
+            <strong>
+              {remainingDays}{' '}
+              {remainingDays === 1 ? 'dia restante' : 'dias restantes'}
+            </strong>{' '}
+            em sua assinatura.
+          </>
+        ),
+      };
+    }
+
+    return {
+      message: 'Não foi possível verificar o status da sua assinatura.',
+    };
+  }, [userProfile, isAdmin]);
 
   const handleCopyCoupon = () => {
     const coupon = 'FINPRO15';
@@ -60,10 +126,8 @@ export function Header() {
               Premium
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto">
-            <div className="text-sm">
-              Você tem <strong>30 dias</strong> restantes em seu teste.
-            </div>
+          <PopoverContent className="w-auto max-w-xs">
+            <div className="text-sm">{subscriptionDetails.message}</div>
           </PopoverContent>
         </Popover>
 
