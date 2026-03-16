@@ -100,8 +100,8 @@ service cloud.firestore {
     match /users/{userId}/subscriptions/{subId} {
       allow get: if isOwner(userId) || isAdmin();
       allow list: if isOwner(userId) || isAdmin();
-      // Only server-side logic (actions) should write to subscriptions
-      allow write: if false; 
+      // Allow user to create/update their own subscription doc
+      allow write: if isOwner(userId) && request.resource.data.userId == userId;
     }
 
     /**
@@ -109,9 +109,16 @@ service cloud.firestore {
      * @path /activationCodes/{codeId}
      */
     match /activationCodes/{codeId} {
-      // Only admins can read/write activation codes.
-      // Activation is handled by a trusted server action.
+      // Admins can create and manage any code.
       allow read, write: if isAdmin();
+      // Any signed-in user can read a code to check its status.
+      allow get: if isSignedIn();
+      // A user can "claim" a code by updating it, but only if it hasn't been used yet.
+      // This allows the activation transaction on the client to succeed.
+      allow update: if isSignedIn() 
+                    && resource.data.isUsed == false
+                    && request.resource.data.isUsed == true
+                    && request.resource.data.usedBy == request.auth.uid;
     }
 
     /**

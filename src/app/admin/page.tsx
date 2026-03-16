@@ -1,20 +1,27 @@
 'use client';
 
 import { PageHeader } from '@/components/page-header';
-import { useUser } from '@/firebase';
+import { useUser, useFirestore } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2, Copy, Shield, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { generateActivationCode } from '@/app/actions';
+import { doc, setDoc, collection } from 'firebase/firestore';
 
 const ADMIN_EMAIL = 'leo.yuuki@icloud.com';
 
 export default function AdminPage() {
   const { user, isUserLoading } = useUser();
+  const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -33,23 +40,46 @@ export default function AdminPage() {
     setIsGenerating(true);
     setGeneratedCode(null);
     setHasCopied(false);
-    
-    const result = await generateActivationCode(duration);
-    
-    if (result.success && result.code) {
-      setGeneratedCode(result.code);
+
+    if (!firestore) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: 'Firestore não disponível.',
+      });
+      setIsGenerating(false);
+      return;
+    }
+
+    const codesRef = collection(firestore, 'activationCodes');
+    const newCodeRef = doc(codesRef);
+    const code = newCodeRef.id;
+
+    try {
+      await setDoc(newCodeRef, {
+        id: code,
+        durationMonths: duration,
+        isUsed: false,
+        createdAt: new Date().toISOString(),
+        usedBy: null,
+        usedAt: null,
+      });
+
+      setGeneratedCode(code);
       toast({
         title: 'Código Gerado!',
         description: 'O novo código de ativação está pronto.',
       });
-    } else {
+    } catch (error) {
+      console.error('Error generating activation code:', error);
       toast({
         variant: 'destructive',
         title: 'Erro ao gerar código',
-        description: result.error || 'Ocorreu um erro inesperado.',
+        description: 'Falha ao gerar o código. Verifique suas permissões.',
       });
+    } finally {
+      setIsGenerating(false);
     }
-    setIsGenerating(false);
   };
 
   const handleCopyToClipboard = () => {
@@ -107,13 +137,23 @@ export default function AdminPage() {
 
           {generatedCode && (
             <div className="space-y-2 rounded-lg border bg-muted/50 p-4">
-              <p className="text-sm font-medium text-muted-foreground">Seu novo código:</p>
+              <p className="text-sm font-medium text-muted-foreground">
+                Seu novo código:
+              </p>
               <div className="flex items-center gap-4">
                 <p className="flex-1 select-all break-all rounded-md bg-background p-2 font-mono text-sm">
                   {generatedCode}
                 </p>
-                <Button variant="outline" size="icon" onClick={handleCopyToClipboard}>
-                  {hasCopied ? <Check className="size-4 text-green-500" /> : <Copy className="size-4" />}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleCopyToClipboard}
+                >
+                  {hasCopied ? (
+                    <Check className="size-4 text-green-500" />
+                  ) : (
+                    <Copy className="size-4" />
+                  )}
                 </Button>
               </div>
             </div>
