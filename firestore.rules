@@ -76,10 +76,10 @@ service cloud.firestore {
     }
     
     /**
-     * Checks if the authenticated user has an 'admin' role.
+     * Checks if the authenticated user has the specific admin UID.
      */
     function isAdmin() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      return isSignedIn() && request.auth.uid == 'VeKbw5qy5qShcYE0uBNTYw5a6cJ3';
     }
 
     /**
