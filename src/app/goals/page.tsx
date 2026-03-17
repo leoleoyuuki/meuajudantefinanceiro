@@ -11,22 +11,22 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { formatCurrency } from '@/lib/utils';
 import { format } from 'date-fns';
-import {
-  useFirestore,
-  useUser,
-  updateDocumentNonBlocking,
-} from '@/firebase';
+import { useFirestore, useUser } from '@/firebase';
 import {
   collection,
   doc,
-  updateDoc,
   increment,
   getDoc,
-  setDoc,
   getDocs,
   query,
+  writeBatch,
 } from 'firebase/firestore';
-import type { FinancialGoal, MonthlySummary } from '@/lib/types';
+import type {
+  FinancialGoal,
+  MonthlySummary,
+  Category,
+  Transaction,
+} from '@/lib/types';
 import { Loader2, PlusCircle, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -48,6 +48,7 @@ export default function GoalsPage() {
   const { toast } = useToast();
 
   const [goals, setGoals] = useState<FinancialGoal[] | null>(null);
+  const [categories, setCategories] = useState<Category[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const [selectedGoal, setSelectedGoal] = useState<FinancialGoal | null>(null);
@@ -60,36 +61,51 @@ export default function GoalsPage() {
       return;
     }
 
-    const fetchGoals = async () => {
+    const fetchData = async () => {
       setIsLoading(true);
-      const q = query(
-        collection(firestore, 'users', user.uid, 'financialGoals')
-      );
       try {
-        const querySnapshot = await getDocs(q);
-        const fetchedGoals = querySnapshot.docs.map((doc) => ({
+        const goalsQuery = query(
+          collection(firestore, 'users', user.uid, 'financialGoals')
+        );
+        const categoriesQuery = query(
+          collection(firestore, 'users', user.uid, 'categories')
+        );
+
+        const [goalsSnapshot, categoriesSnapshot] = await Promise.all([
+          getDocs(goalsQuery),
+          getDocs(categoriesQuery),
+        ]);
+
+        const fetchedGoals = goalsSnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         })) as FinancialGoal[];
         setGoals(fetchedGoals);
+
+        const fetchedCategories = categoriesSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as Category[];
+        setCategories(fetchedCategories);
       } catch (error) {
-        console.error('Error fetching financial goals: ', error);
+        console.error('Error fetching financial goals or categories: ', error);
         setGoals([]);
+        setCategories([]);
         toast({
           variant: 'destructive',
-          title: 'Erro ao buscar metas',
-          description: 'Não foi possível carregar suas metas financeiras.',
+          title: 'Erro ao buscar dados',
+          description: 'Não foi possível carregar suas metas ou categorias.',
         });
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchGoals();
+    fetchData();
   }, [user, firestore, toast]);
 
   const handleAddAmount = async () => {
-    if (!selectedGoal || !firestore || !user || !goals) return;
+    if (!selectedGoal || !firestore || !user || !goals || !categories) return;
     const numericAmount = parseFloat(amountToAdd);
     if (isNaN(numericAmount) || numericAmount <= 0) {
       toast({
@@ -111,15 +127,36 @@ export default function GoalsPage() {
       return;
     }
 
+    const investmentCategory = categories.find(
+      (c) => c.name === 'Investimentos' && c.type === 'expense'
+    );
+    if (!investmentCategory) {
+      toast({
+        title: 'Categoria não encontrada',
+        description:
+          'A categoria "Investimentos" não foi encontrada. Não foi possível registrar a movimentação.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     // Optimistically update the UI
+    const originalGoals = goals;
     const updatedGoals = goals.map((goal) =>
       goal.id === selectedGoal.id
-        ? { ...goal, currentAmount: newCurrentAmount, updatedAt: new Date().toISOString() }
+        ? {
+            ...goal,
+            currentAmount: newCurrentAmount,
+            updatedAt: new Date().toISOString(),
+          }
         : goal
     );
     setGoals(updatedGoals);
 
+    const now = new Date();
+    const batch = writeBatch(firestore);
 
+    // 1. Update the financial goal document
     const goalRef = doc(
       firestore,
       'users',
@@ -127,43 +164,76 @@ export default function GoalsPage() {
       'financialGoals',
       selectedGoal.id
     );
-    const now = new Date();
-    const nowISO = now.toISOString();
-
-    updateDocumentNonBlocking(goalRef, {
+    batch.update(goalRef, {
       currentAmount: newCurrentAmount,
-      updatedAt: nowISO,
+      updatedAt: now.toISOString(),
     });
 
-    try {
-      // Update all-time goals summary
-      const summaryRef = doc(
-        firestore,
-        'users',
-        user.uid,
-        'goalsSummaries',
-        'summary'
-      );
-      await updateDoc(summaryRef, {
-        totalCurrentAmount: increment(numericAmount),
-        updatedAt: nowISO,
-      });
+    // 2. Create a new transaction for the investment
+    const transactionRef = doc(
+      collection(firestore, 'users', user.uid, 'transactions')
+    );
+    const transactionData: Omit<Transaction, 'category'> = {
+      id: transactionRef.id,
+      userId: user.uid,
+      amount: numericAmount,
+      type: 'expense',
+      description: `Aplicação na meta: ${selectedGoal.name}`,
+      categoryId: investmentCategory.id,
+      date: now.toISOString(),
+      paymentMethod: 'Aplicação em Meta',
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString(),
+    };
+    batch.set(transactionRef, transactionData);
 
-      // Update monthly summary for investments
-      const monthlySummaryId = format(now, 'yyyy-MM');
-      const monthlySummaryRef = doc(
-        firestore,
-        'users',
-        user.uid,
-        'monthlySummaries',
-        monthlySummaryId
-      );
+    // 3. Update all-time goals summary
+    const summaryRef = doc(
+      firestore,
+      'users',
+      user.uid,
+      'goalsSummaries',
+      'summary'
+    );
+    batch.update(summaryRef, {
+      totalCurrentAmount: increment(numericAmount),
+      updatedAt: now.toISOString(),
+    });
+
+    // 4. Update monthly summary
+    const monthlySummaryId = format(now, 'yyyy-MM');
+    const monthlySummaryRef = doc(
+      firestore,
+      'users',
+      user.uid,
+      'monthlySummaries',
+      monthlySummaryId
+    );
+
+    try {
       const monthlySummarySnap = await getDoc(monthlySummaryRef);
 
       if (monthlySummarySnap.exists()) {
-        await updateDoc(monthlySummaryRef, {
-          totalInvested: increment(numericAmount),
-          updatedAt: nowISO,
+        const summaryData = monthlySummarySnap.data() as MonthlySummary;
+        const newSpendingByCategory = [...(summaryData.spendingByCategory || [])];
+        const categoryIndex = newSpendingByCategory.findIndex(
+          (item) => item.categoryId === investmentCategory.id
+        );
+
+        if (categoryIndex > -1) {
+          newSpendingByCategory[categoryIndex].amount += numericAmount;
+        } else {
+          newSpendingByCategory.push({
+            categoryId: investmentCategory.id,
+            amount: numericAmount,
+          });
+        }
+
+        batch.update(monthlySummaryRef, {
+          totalExpense: increment(numericAmount),
+          netBalance: increment(-numericAmount),
+          spendingByCategory: newSpendingByCategory,
+          updatedAt: now.toISOString(),
         });
       } else {
         const month = parseInt(format(now, 'M'));
@@ -174,24 +244,35 @@ export default function GoalsPage() {
           month,
           year,
           totalIncome: 0,
-          totalExpense: 0,
-          netBalance: 0,
-          spendingByCategory: [],
-          totalInvested: numericAmount,
-          createdAt: nowISO,
-          updatedAt: nowISO,
+          totalExpense: numericAmount,
+          netBalance: -numericAmount,
+          spendingByCategory: [
+            { categoryId: investmentCategory.id, amount: numericAmount },
+          ],
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
         };
-        await setDoc(monthlySummaryRef, newSummary);
+        batch.set(monthlySummaryRef, newSummary);
       }
+
+      await batch.commit();
     } catch (error) {
-      console.error('Failed to update summaries:', error);
+      console.error('Failed to update summaries and commit batch:', error);
+      toast({
+        title: 'Erro ao salvar',
+        description: 'Ocorreu um erro ao registrar o investimento.',
+        variant: 'destructive',
+      });
+      // Revert optimistic UI update
+      setGoals(originalGoals);
+      return;
     }
 
     toast({
       title: 'Valor adicionado!',
-      description: `${formatCurrency(
-        numericAmount
-      )} adicionado à meta "${selectedGoal.name}".`,
+      description: `${formatCurrency(numericAmount)} adicionado à meta "${
+        selectedGoal.name
+      }".`,
     });
 
     setIsDialogOpen(false);

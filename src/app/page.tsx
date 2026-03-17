@@ -187,13 +187,19 @@ export default function DashboardPage() {
         invested: 0,
       };
     }
+
+    const investmentCategory = categories?.find(c => c.name === 'Investimentos');
+    const investmentSpending = investmentCategory 
+      ? currentMonthSummary.spendingByCategory?.find(s => s.categoryId === investmentCategory.id)
+      : undefined;
+
     return {
       totalIncome: currentMonthSummary.totalIncome,
       totalExpense: currentMonthSummary.totalExpense,
       balance: currentMonthSummary.netBalance,
-      invested: currentMonthSummary.totalInvested || 0,
+      invested: investmentSpending?.amount || 0,
     };
-  }, [monthlySummaries]);
+  }, [monthlySummaries, categories]);
 
   const categorySpendingData = useMemo(() => {
     if (!monthlySummaries || !categories) return [];
@@ -272,7 +278,7 @@ export default function DashboardPage() {
     );
   }
 
-  const finalBalance = dashboardData.balance - dashboardData.invested;
+  const finalBalance = dashboardData.balance;
   const censoredPlaceholder = 'R$ ●●●●●';
 
   return (
