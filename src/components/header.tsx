@@ -62,7 +62,7 @@ export function Header() {
     if (!user) return '';
     const firstName = getFirstName(user.displayName);
     const uidPart = user.uid.substring(0, 4);
-    return `${firstName.toUpperCase()}15${uidPart}`;
+    return `${firstName} - ${uidPart}10`;
   }, [user]);
 
   const subscriptionDetails = React.useMemo(() => {
