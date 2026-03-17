@@ -173,7 +173,7 @@ export function MonthlyBalanceChart({ data }: MonthlyBalanceChartProps) {
             <CardTitle>Balanço Mensal</CardTitle>
             {renderAlert()}
           </div>
-          <div className="flex gap-4 text-sm sm:items-center">
+          <div className="flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:gap-4">
             <div className="flex items-center gap-2">
               <div
                 className="h-2.5 w-2.5 rounded-full"
