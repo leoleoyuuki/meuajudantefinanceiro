@@ -22,6 +22,7 @@ import { AreaChart, Area, XAxis, ResponsiveContainer, Tooltip } from 'recharts';
 
 type MonthlyBalanceChartProps = {
   data: MonthlySummary[];
+  isBalanceVisible: boolean;
 };
 
 const chartConfig = {
@@ -35,10 +36,11 @@ const chartConfig = {
   },
 };
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+const CustomTooltip = ({ active, payload, label, isBalanceVisible }: any) => {
   if (active && payload && payload.length) {
     const incomeData = payload.find((p: any) => p.dataKey === 'totalIncome');
     const expenseData = payload.find((p: any) => p.dataKey === 'totalExpense');
+    const censoredPlaceholder = 'R$ ●●●●●';
 
     return (
       <div className="min-w-[10rem] rounded-lg border bg-background/90 p-3 shadow-lg backdrop-blur-sm">
@@ -56,7 +58,9 @@ const CustomTooltip = ({ active, payload, label }: any) => {
                 <p className="text-sm text-muted-foreground">Receitas</p>
               </div>
               <p className="text-sm font-semibold text-foreground">
-                {formatCurrency(incomeData.value)}
+                {isBalanceVisible
+                  ? formatCurrency(incomeData.value)
+                  : censoredPlaceholder}
               </p>
             </div>
           )}
@@ -70,7 +74,9 @@ const CustomTooltip = ({ active, payload, label }: any) => {
                 <p className="text-sm text-muted-foreground">Despesas</p>
               </div>
               <p className="text-sm font-semibold text-foreground">
-                {formatCurrency(expenseData.value)}
+                {isBalanceVisible
+                  ? formatCurrency(expenseData.value)
+                  : censoredPlaceholder}
               </p>
             </div>
           )}
@@ -82,7 +88,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-export function MonthlyBalanceChart({ data }: MonthlyBalanceChartProps) {
+export function MonthlyBalanceChart({ data, isBalanceVisible }: MonthlyBalanceChartProps) {
   const chartData = data
     .map((summary) => ({
       month: format(new Date(summary.year, summary.month - 1), 'MMM', {
@@ -94,6 +100,7 @@ export function MonthlyBalanceChart({ data }: MonthlyBalanceChartProps) {
     .reverse();
 
   const latestSummary = data.length > 0 ? data[0] : null;
+  const censoredPlaceholder = 'R$ ●●●●●';
 
   const renderAlert = () => {
     if (!latestSummary || format(new Date(), 'yyyy-MM') !== latestSummary.id) {
@@ -114,7 +121,7 @@ export function MonthlyBalanceChart({ data }: MonthlyBalanceChartProps) {
           <CheckCircle2 className="size-4" />
           <p>
             Parabéns! Você economizou{' '}
-            <span className="font-bold">{formatCurrency(difference)}</span> este
+            <span className="font-bold">{isBalanceVisible ? formatCurrency(difference) : censoredPlaceholder}</span> este
             mês.
           </p>
         </div>
@@ -128,7 +135,7 @@ export function MonthlyBalanceChart({ data }: MonthlyBalanceChartProps) {
           <p>
             Atenção! Suas despesas superaram as receitas em{' '}
             <span className="font-bold">
-              {formatCurrency(Math.abs(difference))}
+              {isBalanceVisible ? formatCurrency(Math.abs(difference)) : censoredPlaceholder}
             </span>
             .
           </p>
@@ -139,7 +146,7 @@ export function MonthlyBalanceChart({ data }: MonthlyBalanceChartProps) {
     return (
       <CardDescription className="flex items-center gap-2">
         <TrendingUp className="size-4" />
-        Seu balanço este mês está positivo em {formatCurrency(difference)}.
+        Seu balanço este mês está positivo em {isBalanceVisible ? formatCurrency(difference) : censoredPlaceholder}.
       </CardDescription>
     );
   };
@@ -182,7 +189,7 @@ export function MonthlyBalanceChart({ data }: MonthlyBalanceChartProps) {
               <span className="text-muted-foreground">Receitas</span>
               {latestData && (
                 <span className="font-semibold">
-                  {formatCurrency(latestData.totalIncome)}
+                  {isBalanceVisible ? formatCurrency(latestData.totalIncome) : censoredPlaceholder}
                 </span>
               )}
             </div>
@@ -194,7 +201,7 @@ export function MonthlyBalanceChart({ data }: MonthlyBalanceChartProps) {
               <span className="text-muted-foreground">Despesas</span>
               {latestData && (
                 <span className="font-semibold">
-                  {formatCurrency(latestData.totalExpense)}
+                  {isBalanceVisible ? formatCurrency(latestData.totalExpense) : censoredPlaceholder}
                 </span>
               )}
             </div>
@@ -250,7 +257,7 @@ export function MonthlyBalanceChart({ data }: MonthlyBalanceChartProps) {
               />
               <Tooltip
                 cursor={false}
-                content={<CustomTooltip />}
+                content={<CustomTooltip isBalanceVisible={isBalanceVisible} />}
               />
               <Area
                 dataKey="totalExpense"

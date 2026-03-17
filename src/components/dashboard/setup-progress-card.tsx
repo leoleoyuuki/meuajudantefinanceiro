@@ -4,10 +4,12 @@ import Link from 'next/link';
 
 type GoalsProgressCardProps = {
   progressPercentage: number;
+  isBalanceVisible: boolean;
 };
 
 export function GoalsProgressCard({
   progressPercentage,
+  isBalanceVisible,
 }: GoalsProgressCardProps) {
   const progress = progressPercentage > 100 ? 100 : progressPercentage;
   const circumference = 100.53; // 2 * PI * 16
@@ -15,7 +17,7 @@ export function GoalsProgressCard({
 
   return (
     <Link href="/goals">
-      <Card className="flex h-full items-center justify-between p-4 transition-shadow hover:shadow-md bg-card">
+      <Card className="flex h-full items-center justify-between bg-card p-4 transition-shadow hover:shadow-md">
         <div className="flex items-center gap-4">
           <div className="relative size-10">
             <svg
@@ -45,15 +47,17 @@ export function GoalsProgressCard({
               />
             </svg>
             <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-xs font-bold text-primary">{`${Math.floor(
-                progress
-              )}%`}</span>
+              <span className="text-xs font-bold text-primary">
+                {isBalanceVisible ? `${Math.floor(progress)}%` : '●●%'}
+              </span>
             </div>
           </div>
           <div>
             <p className="font-semibold text-primary">Progresso das Metas</p>
             <p className="text-sm text-muted-foreground">
-              {`Total de ${progress.toFixed(2).replace('.', ',')}% alcançado`}
+              {isBalanceVisible
+                ? `Total de ${progress.toFixed(2).replace('.', ',')}% alcançado`
+                : 'Progresso oculto'}
             </p>
           </div>
         </div>

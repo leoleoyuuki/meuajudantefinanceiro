@@ -12,6 +12,7 @@ import {
   PiggyBank,
   Trophy,
   Eye,
+  EyeOff,
 } from 'lucide-react';
 import {
   useUser,
@@ -45,6 +46,8 @@ import { MonthlyBalanceChart } from '@/components/dashboard/monthly-balance-char
 import { CategorySpendingChart } from '@/components/dashboard/category-spending-chart';
 
 export default function DashboardPage() {
+  const [isBalanceVisible, setIsBalanceVisible] = useState(true);
+  const toggleBalanceVisibility = () => setIsBalanceVisible((prev) => !prev);
   const firestore = useFirestore();
   const { user } = useUser();
 
@@ -270,6 +273,7 @@ export default function DashboardPage() {
   }
 
   const finalBalance = dashboardData.balance - dashboardData.invested;
+  const censoredPlaceholder = 'R$ ●●●●●';
 
   return (
     <div className="flex flex-col gap-8">
@@ -306,10 +310,23 @@ export default function DashboardPage() {
                       finalBalance < 0 && 'text-red-300'
                     )}
                   >
-                    {formatCurrency(finalBalance)}
+                    {isBalanceVisible
+                      ? formatCurrency(finalBalance)
+                      : censoredPlaceholder}
                   </p>
                 </div>
-                <Eye className="mt-1 size-4 text-primary-foreground/40" />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleBalanceVisibility}
+                  className="h-auto w-auto p-1 text-primary-foreground/40 hover:bg-white/10 hover:text-primary-foreground"
+                >
+                  {isBalanceVisible ? (
+                    <Eye className="mt-1 size-4" />
+                  ) : (
+                    <EyeOff className="mt-1 size-4" />
+                  )}
+                </Button>
               </div>
             </div>
 
@@ -320,7 +337,9 @@ export default function DashboardPage() {
                   Receitas
                 </p>
                 <p className="text-sm font-bold leading-none text-primary">
-                  {formatCurrency(dashboardData.totalIncome)}
+                  {isBalanceVisible
+                    ? formatCurrency(dashboardData.totalIncome)
+                    : censoredPlaceholder}
                 </p>
               </div>
               <div className="px-3 py-4">
@@ -328,7 +347,9 @@ export default function DashboardPage() {
                   Despesas
                 </p>
                 <p className="text-sm font-bold leading-none text-destructive">
-                  {formatCurrency(dashboardData.totalExpense)}
+                  {isBalanceVisible
+                    ? formatCurrency(dashboardData.totalExpense)
+                    : censoredPlaceholder}
                 </p>
               </div>
               <div className="px-3 py-4">
@@ -336,7 +357,9 @@ export default function DashboardPage() {
                   Investido Mês
                 </p>
                 <p className="text-sm font-bold leading-none text-chart-1">
-                  {formatCurrency(dashboardData.invested)}
+                  {isBalanceVisible
+                    ? formatCurrency(dashboardData.invested)
+                    : censoredPlaceholder}
                 </p>
               </div>
             </div>
@@ -347,35 +370,49 @@ export default function DashboardPage() {
             <CardContent className="flex flex-col p-0 md:flex-row md:items-center">
               <StatCard
                 title="Balanço"
-                value={formatCurrency(finalBalance)}
+                value={finalBalance}
                 className={cn(finalBalance < 0 && 'text-destructive')}
+                isBalanceVisible={isBalanceVisible}
+                toggleBalanceVisibility={toggleBalanceVisibility}
               />
               <div className="mx-2 hidden h-10 w-[1px] bg-border md:block" />
               <div className="my-1 h-[1px] w-full bg-border md:hidden" />
               <StatCard
                 title="Receitas"
-                value={formatCurrency(dashboardData.totalIncome)}
+                value={dashboardData.totalIncome}
                 className="text-primary"
+                isBalanceVisible={isBalanceVisible}
+                toggleBalanceVisibility={toggleBalanceVisibility}
               />
               <div className="mx-2 hidden h-10 w-[1px] bg-border md:block" />
               <div className="my-1 h-[1px] w-full bg-border md:hidden" />
               <StatCard
                 title="Despesas"
-                value={formatCurrency(dashboardData.totalExpense)}
+                value={dashboardData.totalExpense}
                 className="text-destructive"
+                isBalanceVisible={isBalanceVisible}
+                toggleBalanceVisibility={toggleBalanceVisibility}
               />
               <div className="mx-2 hidden h-10 w-[1px] bg-border md:block" />
               <div className="my-1 h-[1px] w-full bg-border md:hidden" />
               <StatCard
                 title="Investido no Mês"
-                value={formatCurrency(dashboardData.invested)}
+                value={dashboardData.invested}
                 className="text-chart-1"
+                isBalanceVisible={isBalanceVisible}
+                toggleBalanceVisibility={toggleBalanceVisibility}
               />
             </CardContent>
           </Card>
 
-          <MonthlyBalanceChart data={monthlyChartData} />
-          <RecentTransactions transactions={enrichedTransactions} />
+          <MonthlyBalanceChart
+            data={monthlyChartData}
+            isBalanceVisible={isBalanceVisible}
+          />
+          <RecentTransactions
+            transactions={enrichedTransactions}
+            isBalanceVisible={isBalanceVisible}
+          />
         </div>
 
         <div className="flex flex-col gap-6 lg:col-span-1">
@@ -385,7 +422,10 @@ export default function DashboardPage() {
               Novo Lançamento
             </Link>
           </Button>
-          <GoalsProgressCard progressPercentage={goalsData.overallProgress} />
+          <GoalsProgressCard
+            progressPercentage={goalsData.overallProgress}
+            isBalanceVisible={isBalanceVisible}
+          />
 
           {goalsSummary && goalsSummary.goalsCount > 0 ? (
             <Card>
@@ -397,7 +437,9 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 <p className="font-headline text-2xl font-bold">
-                  {formatCurrency(goalsData.totalSaved)}
+                  {isBalanceVisible
+                    ? formatCurrency(goalsData.totalSaved)
+                    : censoredPlaceholder}
                 </p>
                 <p className="text-xs text-muted-foreground">Desde sempre</p>
 
@@ -418,7 +460,9 @@ export default function DashboardPage() {
                         </p>
                         <p className="text-xs text-muted-foreground">
                           Economize{' '}
-                          {formatCurrency(goalsData.firstGoal.targetAmount)}
+                          {isBalanceVisible
+                            ? formatCurrency(goalsData.firstGoal.targetAmount)
+                            : 'R$ ●●●●●'}
                         </p>
                       </div>
                     </div>
@@ -449,7 +493,10 @@ export default function DashboardPage() {
               </Button>
             </Card>
           )}
-          <CategorySpendingChart data={categorySpendingData} />
+          <CategorySpendingChart
+            data={categorySpendingData}
+            isBalanceVisible={isBalanceVisible}
+          />
         </div>
       </div>
 

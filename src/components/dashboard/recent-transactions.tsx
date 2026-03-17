@@ -16,9 +16,13 @@ import { Button } from '../ui/button';
 
 type RecentTransactionsProps = {
   transactions: Transaction[];
+  isBalanceVisible: boolean;
 };
 
-export function RecentTransactions({ transactions }: RecentTransactionsProps) {
+export function RecentTransactions({
+  transactions,
+  isBalanceVisible,
+}: RecentTransactionsProps) {
   return (
     <Card>
       <CardHeader>
@@ -63,8 +67,14 @@ export function RecentTransactions({ transactions }: RecentTransactionsProps) {
                         : 'text-destructive'
                     )}
                   >
-                    {transaction.type === 'expense' && '- '}
-                    {formatCurrency(transaction.amount)}
+                    {isBalanceVisible ? (
+                      <>
+                        {transaction.type === 'expense' && '- '}
+                        {formatCurrency(transaction.amount)}
+                      </>
+                    ) : (
+                      'R$ ●●●●●'
+                    )}
                   </div>
                 </div>
               );

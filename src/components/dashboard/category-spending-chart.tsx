@@ -28,17 +28,24 @@ type CategorySpendingChartProps = {
     amount: number;
     fill: string;
   }[];
+  isBalanceVisible: boolean;
 };
 
-export function CategorySpendingChart({ data }: CategorySpendingChartProps) {
+export function CategorySpendingChart({
+  data,
+  isBalanceVisible,
+}: CategorySpendingChartProps) {
+  const censoredPlaceholder = 'R$ ●●●●●';
   // Cálculos memorizados
-  const totalAmount = React.useMemo(() => 
-    data.reduce((acc, curr) => acc + curr.amount, 0), 
-  [data]);
+  const totalAmount = React.useMemo(
+    () => data.reduce((acc, curr) => acc + curr.amount, 0),
+    [data]
+  );
 
-  const currentMonthName = React.useMemo(() => 
-    format(new Date(), 'MMMM', { locale: ptBR }), 
-  []);
+  const currentMonthName = React.useMemo(
+    () => format(new Date(), 'MMMM', { locale: ptBR }),
+    []
+  );
 
   const chartConfig = React.useMemo(() => {
     return data.reduce((acc, item) => {
@@ -50,7 +57,7 @@ export function CategorySpendingChart({ data }: CategorySpendingChartProps) {
   // Estado Vazio (Empty State)
   if (data.length === 0) {
     return (
-      <Card className="flex flex-col min-h-[400px] items-center justify-center text-center border-dashed">
+      <Card className="flex min-h-[400px] flex-col items-center justify-center border-dashed text-center">
         <CardHeader>
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
             <Inbox className="h-6 w-6 text-muted-foreground" />
@@ -65,17 +72,18 @@ export function CategorySpendingChart({ data }: CategorySpendingChartProps) {
   }
 
   return (
-    <Card className="flex flex-col shadow-sm overflow-hidden">
+    <Card className="flex flex-col overflow-hidden shadow-sm">
       <CardHeader className="items-start pb-2">
-        <CardTitle className="text-xl font-bold tracking-tight">Gastos por Categoria</CardTitle>
+        <CardTitle className="text-xl font-bold tracking-tight">
+          Gastos por Categoria
+        </CardTitle>
         <CardDescription className="capitalize">
           Resumo de {currentMonthName}
         </CardDescription>
       </CardHeader>
-      
+
       <CardContent className="flex-1 pb-6 pt-2">
         <div className="flex flex-col items-center gap-8 md:flex-row md:items-start">
-          
           {/* Seção do Gráfico com tamanho fixo */}
           <div className="flex-shrink-0">
             <ChartContainer
@@ -86,7 +94,13 @@ export function CategorySpendingChart({ data }: CategorySpendingChartProps) {
                 <PieChart>
                   <ChartTooltip
                     cursor={false}
-                    content={<ChartTooltipContent hideLabel />}
+                    content={
+                      isBalanceVisible ? (
+                        <ChartTooltipContent hideLabel />
+                      ) : (
+                        () => null
+                      )
+                    }
                   />
                   <Pie
                     data={data}
@@ -99,22 +113,39 @@ export function CategorySpendingChart({ data }: CategorySpendingChartProps) {
                     animationDuration={1000}
                   >
                     {data.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={entry.fill} 
-                        className="stroke-background transition-all duration-300 hover:opacity-80 outline-none"
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={entry.fill}
+                        className="stroke-background outline-none transition-all duration-300 hover:opacity-80"
                       />
                     ))}
                     <Label
                       content={({ viewBox }) => {
                         if (viewBox && 'cx' in viewBox && 'cy' in viewBox) {
                           return (
-                            <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle" dominantBaseline="middle">
-                              <tspan x={viewBox.cx} y={viewBox.cy - 8} className="fill-muted-foreground text-[10px] uppercase font-medium tracking-widest">
+                            <text
+                              x={viewBox.cx}
+                              y={viewBox.cy}
+                              textAnchor="middle"
+                              dominantBaseline="middle"
+                            >
+                              <tspan
+                                x={viewBox.cx}
+                                y={viewBox.cy - 8}
+                                className="fill-muted-foreground text-[10px] font-medium uppercase tracking-widest"
+                              >
                                 Total
                               </tspan>
-                              <tspan x={viewBox.cx} y={viewBox.cy + 16} className="fill-foreground text-xl font-bold">
-                                {formatCurrency(totalAmount).replace('R$', '').trim()}
+                              <tspan
+                                x={viewBox.cx}
+                                y={viewBox.cy + 16}
+                                className="fill-foreground text-xl font-bold"
+                              >
+                                {isBalanceVisible
+                                  ? formatCurrency(totalAmount)
+                                      .replace('R$', '')
+                                      .trim()
+                                  : '●●●●●'}
                               </tspan>
                             </text>
                           );
@@ -134,29 +165,34 @@ export function CategorySpendingChart({ data }: CategorySpendingChartProps) {
                 {[...data]
                   .sort((a, b) => b.amount - a.amount)
                   .map((item) => {
-                    const percentage = totalAmount > 0 ? (item.amount / totalAmount) * 100 : 0;
+                    const percentage =
+                      totalAmount > 0 ? (item.amount / totalAmount) * 100 : 0;
                     return (
-                      <div 
-                        key={item.category} 
-                        className="flex items-center justify-between p-2 rounded-xl border border-transparent hover:border-border hover:bg-muted/30 transition-all"
+                      <div
+                        key={item.category}
+                        className="flex items-center justify-between rounded-xl border border-transparent p-2 transition-all hover:border-border hover:bg-muted/30"
                       >
                         <div className="flex items-center gap-3">
-                          <div 
-                            className="h-3 w-3 rounded-full shadow-sm shrink-0" 
-                            style={{ backgroundColor: item.fill }} 
+                          <div
+                            className="h-3 w-3 shrink-0 rounded-full shadow-sm"
+                            style={{ backgroundColor: item.fill }}
                           />
-                          <div className="flex flex-col min-w-0">
+                          <div className="flex min-w-0 flex-col">
                             <span className="text-sm font-semibold leading-tight">
                               {item.category}
                             </span>
                             <span className="text-[11px] text-muted-foreground">
-                              {formatCurrency(item.amount)}
+                              {isBalanceVisible
+                                ? formatCurrency(item.amount)
+                                : censoredPlaceholder}
                             </span>
                           </div>
                         </div>
                         <div className="flex flex-col items-end">
                           <span className="text-sm font-bold tabular-nums text-foreground">
-                            {percentage.toFixed(0)}%
+                            {isBalanceVisible
+                              ? `${percentage.toFixed(0)}%`
+                              : '●●%'}
                           </span>
                         </div>
                       </div>
@@ -165,7 +201,6 @@ export function CategorySpendingChart({ data }: CategorySpendingChartProps) {
               </div>
             </ScrollArea>
           </div>
-          
         </div>
       </CardContent>
     </Card>
