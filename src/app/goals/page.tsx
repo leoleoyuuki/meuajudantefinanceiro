@@ -41,11 +41,14 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
+import { usePrivacy } from '@/context/privacy-provider';
 
 export default function GoalsPage() {
   const firestore = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
+  const { isBalanceVisible } = usePrivacy();
+  const censoredPlaceholder = 'R$ ●●●●●';
 
   const [goals, setGoals] = useState<FinancialGoal[] | null>(null);
   const [categories, setCategories] = useState<Category[] | null>(null);
@@ -270,9 +273,7 @@ export default function GoalsPage() {
 
     toast({
       title: 'Valor adicionado!',
-      description: `${formatCurrency(numericAmount)} adicionado à meta "${
-        selectedGoal.name
-      }".`,
+      description: `${isBalanceVisible ? formatCurrency(numericAmount) : censoredPlaceholder} adicionado à meta "${selectedGoal.name}".`,
     });
 
     setIsDialogOpen(false);
@@ -320,13 +321,13 @@ export default function GoalsPage() {
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Progresso</span>
                     <span className="font-semibold text-primary">
-                      {progress.toFixed(0)}%
+                      {isBalanceVisible ? `${progress.toFixed(0)}%` : '●●%'}
                     </span>
                   </div>
                   <Progress value={progress} />
                   <div className="flex justify-between pt-2 text-xs text-muted-foreground">
-                    <span>{formatCurrency(goal.currentAmount)}</span>
-                    <span>{formatCurrency(goal.targetAmount)}</span>
+                    <span>{isBalanceVisible ? formatCurrency(goal.currentAmount) : censoredPlaceholder}</span>
+                    <span>{isBalanceVisible ? formatCurrency(goal.targetAmount) : censoredPlaceholder}</span>
                   </div>
                   <div className="pt-4">
                     <Button
@@ -382,7 +383,7 @@ export default function GoalsPage() {
             </DialogTitle>
             <DialogDescription>
               O valor atual é de{' '}
-              {formatCurrency(selectedGoal?.currentAmount ?? 0)}. Quanto você
+              {isBalanceVisible ? formatCurrency(selectedGoal?.currentAmount ?? 0) : censoredPlaceholder}. Quanto você
               gostaria de adicionar?
             </DialogDescription>
           </DialogHeader>

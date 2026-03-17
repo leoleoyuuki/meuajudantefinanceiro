@@ -63,6 +63,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
+import { usePrivacy } from '@/context/privacy-provider';
 
 // Based on common financial advice (50/30/20 rule adjusted)
 const idealPercentages: { [key: string]: number } = {
@@ -120,6 +121,8 @@ interface TransactionsCacheEntry {
 export default function TransactionsPage() {
   const firestore = useFirestore();
   const { user } = useUser();
+  const { isBalanceVisible } = usePrivacy();
+  const censoredPlaceholder = 'R$ ●●●●●';
   const [searchTerm, setSearchTerm] = useState('');
 
   const summariesQuery = useMemoFirebase(
@@ -307,9 +310,7 @@ export default function TransactionsPage() {
           categoryName: item.category,
           spentAmount: item.amount,
           idealAmount: 0,
-          comment: `Gasto de ${formatCurrency(
-            item.amount
-          )}. Análise indisponível sem registro de renda.`,
+          comment: `Gasto de ${isBalanceVisible ? formatCurrency(item.amount) : censoredPlaceholder}. Análise indisponível sem registro de renda.`,
           status: 'good' as const,
         })),
         summary:
@@ -344,9 +345,7 @@ export default function TransactionsPage() {
       }
 
       if (idealAmount === 0 && spentAmount > 0) {
-        comment = `Esta categoria não tem um gasto ideal definido, mas você gastou ${formatCurrency(
-          spentAmount
-        )}.`;
+        comment = `Esta categoria não tem um gasto ideal definido, mas você gastou ${isBalanceVisible ? formatCurrency(spentAmount) : censoredPlaceholder}.`;
       }
 
       return {
@@ -385,7 +384,7 @@ export default function TransactionsPage() {
       analysis: analysisItems,
       summary,
     };
-  }, [selectedSummary, categorySpendingData]);
+  }, [selectedSummary, categorySpendingData, isBalanceVisible, censoredPlaceholder]);
 
   const enrichedTransactions = useMemo(() => {
     if (!transactions || !categories) return [];
@@ -485,7 +484,7 @@ export default function TransactionsPage() {
         </CardHeader>
         <CardContent>
           <div className="grid gap-8 lg:grid-cols-2">
-            <CategorySpendingChart data={categorySpendingData} />
+            <CategorySpendingChart data={categorySpendingData} isBalanceVisible={isBalanceVisible} />
             <div className="flex flex-col gap-4">
               <div className="flex items-start gap-3 rounded-lg border bg-accent/50 p-4">
                 <Lightbulb className="mt-1 size-5 shrink-0 text-primary" />
@@ -538,7 +537,7 @@ export default function TransactionsPage() {
                                 Gasto
                               </span>
                               <span className="font-semibold">
-                                {formatCurrency(item.spentAmount)}
+                                {isBalanceVisible ? formatCurrency(item.spentAmount) : censoredPlaceholder}
                               </span>
                             </div>
                             <div className="flex justify-between rounded-md bg-background/50 p-2 text-xs">
@@ -546,7 +545,7 @@ export default function TransactionsPage() {
                                 Ideal
                               </span>
                               <span className="font-semibold">
-                                {formatCurrency(item.idealAmount)}
+                                {isBalanceVisible ? formatCurrency(item.idealAmount) : censoredPlaceholder}
                               </span>
                             </div>
                           </div>
@@ -639,8 +638,14 @@ export default function TransactionsPage() {
                                 : 'text-destructive'
                             )}
                           >
-                            {transaction.type === 'expense' && '- '}
-                            {formatCurrency(transaction.amount)}
+                             {isBalanceVisible ? (
+                              <>
+                                {transaction.type === 'expense' && '- '}
+                                {formatCurrency(transaction.amount)}
+                              </>
+                            ) : (
+                              censoredPlaceholder
+                            )}
                           </span>
                         </div>
                       );

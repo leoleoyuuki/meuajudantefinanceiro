@@ -13,6 +13,7 @@ import { MobileHeader } from './mobile-header';
 import { doc, updateDoc } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
 import { isAfter } from 'date-fns';
+import { PrivacyProvider } from '@/context/privacy-provider';
 
 const ADMIN_EMAIL = 'leo.yuuki@icloud.com';
 
@@ -160,24 +161,28 @@ export default function AuthWrapper({
   if (user && userProfile?.whatsapp && subscriptionStatus === 'active') {
     if (isMobile) {
       return (
-        <div className="relative flex min-h-screen w-full flex-col bg-background">
-          <MobileHeader />
-          <main className="flex-1 p-4 pb-28">{children}</main>
-          <BottomNav />
-        </div>
+        <PrivacyProvider>
+          <div className="relative flex min-h-screen w-full flex-col bg-background">
+            <MobileHeader />
+            <main className="flex-1 p-4 pb-28">{children}</main>
+            <BottomNav />
+          </div>
+        </PrivacyProvider>
       );
     }
 
     return (
-      <SidebarProvider>
-        <div className="flex min-h-screen w-full bg-secondary/50">
-          <AppSidebar />
-          <div className="flex flex-1 flex-col">
-            <Header />
-            <main className="flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
+      <PrivacyProvider>
+        <SidebarProvider>
+          <div className="flex min-h-screen w-full bg-secondary/50">
+            <AppSidebar />
+            <div className="flex flex-1 flex-col">
+              <Header />
+              <main className="flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
+            </div>
           </div>
-        </div>
-      </SidebarProvider>
+        </SidebarProvider>
+      </PrivacyProvider>
     );
   }
 

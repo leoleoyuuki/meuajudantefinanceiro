@@ -36,7 +36,7 @@ import type {
   Transaction,
   Category,
 } from '@/lib/types';
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { formatCurrency, cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -44,10 +44,10 @@ import { StatCard } from '@/components/dashboard/stat-card';
 import { RecentTransactions } from '@/components/dashboard/recent-transactions';
 import { MonthlyBalanceChart } from '@/components/dashboard/monthly-balance-chart';
 import { CategorySpendingChart } from '@/components/dashboard/category-spending-chart';
+import { usePrivacy } from '@/context/privacy-provider';
 
 export default function DashboardPage() {
-  const [isBalanceVisible, setIsBalanceVisible] = useState(true);
-  const toggleBalanceVisibility = () => setIsBalanceVisible((prev) => !prev);
+  const { isBalanceVisible, toggleBalanceVisibility } = usePrivacy();
   const firestore = useFirestore();
   const { user } = useUser();
 
