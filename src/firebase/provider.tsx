@@ -99,12 +99,19 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
               const now = new Date().toISOString();
               const role = firebaseUser.email === ADMIN_EMAIL ? 'admin' : 'user';
 
+              // For email sign-ups, we temporarily store the whatsapp number
+              // in localStorage to get it here.
+              const pendingWhatsapp = localStorage.getItem('pending_signup_whatsapp');
+              if (pendingWhatsapp) {
+                localStorage.removeItem('pending_signup_whatsapp');
+              }
+
               const userProfileData = {
                 uid: firebaseUser.uid,
                 email: firebaseUser.email,
                 displayName: firebaseUser.displayName,
                 photoURL: firebaseUser.photoURL,
-                whatsapp: firebaseUser.phoneNumber || null,
+                whatsapp: pendingWhatsapp || firebaseUser.phoneNumber || null,
                 role: role,
                 createdAt: now,
                 subscriptionStatus: 'inactive',

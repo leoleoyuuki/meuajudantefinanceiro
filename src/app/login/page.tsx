@@ -148,8 +148,10 @@ export default function LoginPage() {
     if (!auth || !firestore) return;
     setIsLoading(true);
     try {
+      // Store whatsapp in localStorage to be picked up by onAuthStateChanged
+      localStorage.setItem('pending_signup_whatsapp', data.whatsapp);
       await signUpWithEmail(auth, firestore, data);
-      // O redirecionamento será tratado pelo AuthWrapper
+      // The redirect will be handled by AuthWrapper after onAuthStateChanged runs
     } catch (error: any) {
       let description = 'Ocorreu um erro ao criar sua conta. Tente novamente.';
       if (error.code === 'auth/email-already-in-use') {
@@ -160,6 +162,8 @@ export default function LoginPage() {
         title: 'Erro no cadastro',
         description,
       });
+      // Clean up localStorage on failure
+      localStorage.removeItem('pending_signup_whatsapp');
     } finally {
       setIsLoading(false);
     }
