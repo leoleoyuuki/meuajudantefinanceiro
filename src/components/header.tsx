@@ -110,12 +110,20 @@ export function Header() {
     };
   }, [userProfile, isAdmin]);
 
-  const handleCopyCoupon = () => {
-    navigator.clipboard.writeText(couponCode);
-    toast({
-      title: 'Cupom copiado!',
-      description: 'Compartilhe com seus amigos.',
-    });
+  const handleCopyCoupon = async () => {
+    try {
+      await navigator.clipboard.writeText(couponCode);
+      toast({
+        title: 'Cupom copiado!',
+        description: 'Compartilhe com seus amigos.',
+      });
+    } catch (err) {
+      toast({
+        title: 'Erro ao copiar',
+        description: 'Não foi possível copiar o cupom para a área de transferência.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleLogout = () => {
