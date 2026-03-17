@@ -10,7 +10,7 @@ import { AppSidebar } from './sidebar';
 import { SidebarProvider } from './ui/sidebar';
 import { Header } from './header';
 import { MobileHeader } from './mobile-header';
-import { doc } from 'firebase/firestore';
+import { doc, updateDoc } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
 import { isAfter } from 'date-fns';
 
@@ -36,9 +36,30 @@ export default function AuthWrapper({
 
   const isAdmin = user?.email === ADMIN_EMAIL;
 
+  // This useEffect will automatically set the user's status to inactive in the database if their subscription has expired.
+  useEffect(() => {
+    if (user && userProfile && firestore && !isAdmin) {
+      const hasExpired =
+        userProfile.subscriptionExpiresAt &&
+        isAfter(new Date(), new Date(userProfile.subscriptionExpiresAt));
+
+      if (userProfile.subscriptionStatus === 'active' && hasExpired) {
+        const userDocRef = doc(firestore, 'users', user.uid);
+        updateDoc(userDocRef, { subscriptionStatus: 'inactive' }).catch(
+          (err) => {
+            console.error('Failed to update subscription status:', err);
+          }
+        );
+      }
+    }
+  }, [user, userProfile, firestore, isAdmin]);
+
   const subscriptionStatus = useMemo(() => {
     if (isAdmin) return 'active';
     if (!userProfile) return 'inactive';
+
+    // This derived state remains to ensure the UI reacts instantly,
+    // even before the database update is reflected back in the useDoc hook.
     if (
       userProfile.subscriptionStatus === 'active' &&
       userProfile.subscriptionExpiresAt
