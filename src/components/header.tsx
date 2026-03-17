@@ -52,6 +52,19 @@ export function Header() {
 
   const isAdmin = user?.email === ADMIN_EMAIL;
 
+  const getFirstName = (name: string | null | undefined): string => {
+    if (!name) return 'USER';
+    const firstName = name.split(' ')[0];
+    return firstName || 'USER';
+  };
+
+  const couponCode = React.useMemo(() => {
+    if (!user) return '';
+    const firstName = getFirstName(user.displayName);
+    const uidPart = user.uid.substring(0, 4);
+    return `${firstName.toUpperCase()}15${uidPart}`;
+  }, [user]);
+
   const subscriptionDetails = React.useMemo(() => {
     if (isAdmin) {
       return {
@@ -98,8 +111,7 @@ export function Header() {
   }, [userProfile, isAdmin]);
 
   const handleCopyCoupon = () => {
-    const coupon = 'FINPRO15';
-    navigator.clipboard.writeText(coupon);
+    navigator.clipboard.writeText(couponCode);
     toast({
       title: 'Cupom copiado!',
       description: 'Compartilhe com seus amigos.',
@@ -112,8 +124,8 @@ export function Header() {
     }
   };
 
-  const annualPrice = 299.9;
-  const discount = annualPrice * 0.15;
+  const annualPrice = 300;
+  const discount = annualPrice * 0.1;
   const displayName = user?.displayName || 'Usuário';
 
   return (
@@ -148,14 +160,14 @@ export function Header() {
                 <p className="text-sm text-muted-foreground">
                   Seu amigo economiza{' '}
                   <span className="font-bold text-primary">
-                    {formatCurrency(discount)} (15% OFF)
+                    {formatCurrency(discount)} (10% OFF)
                   </span>{' '}
                   na anuidade.
                 </p>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="flex-1 rounded-md border border-dashed border-primary bg-primary/10 px-3 py-2 text-center font-mono text-sm font-semibold text-primary">
-                  FINPRO15
+                  {couponCode}
                 </div>
                 <Button
                   onClick={handleCopyCoupon}
