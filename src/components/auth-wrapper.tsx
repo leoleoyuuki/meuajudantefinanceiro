@@ -44,7 +44,7 @@ export default function AuthWrapper({
       userProfile.subscriptionExpiresAt
     ) {
       return isAfter(new Date(), new Date(userProfile.subscriptionExpiresAt))
-        ? 'expired'
+        ? 'inactive'
         : 'active';
     }
     return userProfile.subscriptionStatus || 'inactive';

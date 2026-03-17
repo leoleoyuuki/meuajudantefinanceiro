@@ -8,7 +8,7 @@ export type UserProfile = {
   whatsapp?: string | null;
   role: 'admin' | 'user';
   createdAt: string;
-  subscriptionStatus: 'active' | 'inactive' | 'expired';
+  subscriptionStatus: 'active' | 'inactive';
   subscriptionExpiresAt: string | null;
   subscriptionStartedAt: string | null;
   subscriptionSourceCode: string | null;

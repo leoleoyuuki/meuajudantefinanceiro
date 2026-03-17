@@ -37,7 +37,7 @@
         },
         "subscriptionStatus": {
           "type": "string",
-          "description": "The status of the user's subscription ('active', 'inactive', 'expired')."
+          "description": "The status of the user's subscription ('active', 'inactive')."
         },
         "subscriptionExpiresAt": {
           "type": "string",
