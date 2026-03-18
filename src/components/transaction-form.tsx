@@ -33,8 +33,7 @@ import { ptBR } from 'date-fns/locale';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { suggestCategory } from '@/app/actions';
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import {
   useUser,
   useFirestore,
@@ -86,7 +85,6 @@ export function TransactionForm({
 }: TransactionFormProps) {
   const { toast } = useToast();
   const router = useRouter();
-  const [isSuggesting, setIsSuggesting] = useState(false);
   const firestore = useFirestore();
   const { user } = useUser();
 
@@ -230,36 +228,6 @@ export function TransactionForm({
     router.push('/');
   }
 
-  async function handleDescriptionBlur(e: React.FocusEvent<HTMLInputElement>) {
-    const description = e.target.value;
-    if (description.length > 3 && filteredCategories) {
-      setIsSuggesting(true);
-      try {
-        const availableCategories = filteredCategories.map((c) => c.name);
-        const { suggestedCategory } = await suggestCategory({
-          description,
-          availableCategories,
-        });
-        if (suggestedCategory) {
-          const category = filteredCategories.find(
-            (c) => c.name === suggestedCategory
-          );
-          if (category) {
-            form.setValue('categoryId', category.id);
-            toast({
-              title: 'Categoria sugerida!',
-              description: `Sugerimos "${category.name}" para esta transação.`,
-            });
-          }
-        }
-      } catch (error) {
-        console.error('Error suggesting category:', error);
-      } finally {
-        setIsSuggesting(false);
-      }
-    }
-  }
-
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -337,7 +305,6 @@ export function TransactionForm({
                   placeholder="Ex: iFood, Uber, Salário"
                   {...field}
                   value={field.value ?? ''}
-                  onBlur={handleDescriptionBlur}
                 />
               </FormControl>
               <FormMessage />
@@ -370,7 +337,7 @@ export function TransactionForm({
                     ))}
                   </SelectContent>
                 </Select>
-                {(isSuggesting || categoriesLoading) && (
+                {categoriesLoading && (
                   <Loader2 className="absolute right-10 top-2.5 size-5 animate-spin text-muted-foreground" />
                 )}
               </div>

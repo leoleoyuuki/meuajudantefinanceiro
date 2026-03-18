@@ -1,4 +1,1 @@
-import { config } from 'dotenv';
-config();
-
-import '@/ai/flows/suggest-transaction-category.ts';
+// This file is intentionally left blank after removing the AI categorization feature.
