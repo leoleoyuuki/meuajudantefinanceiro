@@ -57,26 +57,31 @@ import {
 } from '@/components/ui/accordion';
 import { CategorySpendingChart } from '@/components/dashboard/category-spending-chart';
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { usePrivacy } from '@/context/privacy-provider';
 
 // Based on common financial advice (50/30/20 rule adjusted)
 const idealPercentages: { [key: string]: number } = {
-  Moradia: 30,
-  Transporte: 15,
-  Alimentação: 15,
-  Saúde: 10,
+  // Needs: 50%
+  Moradia: 25,
+  Transporte: 10,
+  Alimentação: 10,
+  Saúde: 5,
+  // Wants: 30%
   Lazer: 10,
   Educação: 5,
-  Investimentos: 20,
   Compras: 5,
   Assinaturas: 5,
   Outros: 5,
+  // Savings: 20%
+  Investimentos: 20,
 };
 
 const statusConfig = {
@@ -426,41 +431,39 @@ export default function TransactionsPage() {
               <CardTitle>Análise de Despesas</CardTitle>
               <CardDescription>
                 Compare seus gastos com as{' '}
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="cursor-help font-semibold text-primary underline decoration-dotted underline-offset-2">
-                        porcentagens ideais
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
-                      <div className="space-y-2 p-1">
-                        <h4 className="font-semibold">
-                          Regra 50-30-20: Orçamento Ideal
-                        </h4>
-                        <p className="text-xs text-muted-foreground">
-                          Baseado na sua renda, seus gastos são comparados com
-                          estas sugestões.
-                        </p>
-                        <ul className="space-y-1.5 text-xs">
-                          {Object.entries(idealPercentages).map(
-                            ([category, percentage]) => (
-                              <li
-                                key={category}
-                                className="flex justify-between gap-4"
-                              >
-                                <span className="font-medium text-muted-foreground">
-                                  {category}
-                                </span>
-                                <span className="font-bold">{percentage}%</span>
-                              </li>
-                            )
-                          )}
-                        </ul>
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <span className="cursor-pointer font-semibold text-primary underline decoration-dotted underline-offset-2">
+                      porcentagens ideais
+                    </span>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-xs">
+                    <DialogHeader>
+                      <DialogTitle>
+                        Regra 50-30-20: Orçamento Ideal
+                      </DialogTitle>
+                      <DialogDescription>
+                        Baseado na sua renda, seus gastos são comparados com
+                        estas sugestões.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <ul className="space-y-1.5 text-sm pt-4">
+                      {Object.entries(idealPercentages).map(
+                        ([category, percentage]) => (
+                          <li
+                            key={category}
+                            className="flex justify-between gap-4"
+                          >
+                            <span className="font-medium text-muted-foreground">
+                              {category}
+                            </span>
+                            <span className="font-bold">{percentage}%</span>
+                          </li>
+                        )
+                      )}
+                    </ul>
+                  </DialogContent>
+                </Dialog>
                 .
               </CardDescription>
             </div>
