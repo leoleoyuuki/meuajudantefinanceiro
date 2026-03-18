@@ -4,19 +4,27 @@ import { PageHeader } from '@/components/page-header';
 import { iconMap } from '@/lib/icons';
 import { Button } from '@/components/ui/button';
 import { Loader2, PlusCircle } from 'lucide-react';
-import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
+import {
+  useCollection,
+  useFirestore,
+  useUser,
+  useMemoFirebase,
+} from '@/firebase';
 import { collection } from 'firebase/firestore';
 import type { Category } from '@/lib/types';
+import Link from 'next/link';
 
 export default function CategoriesPage() {
   const firestore = useFirestore();
   const { user } = useUser();
 
   const categoriesQuery = useMemoFirebase(
-    () => (user ? collection(firestore, 'users', user.uid, 'categories') : null),
+    () =>
+      user ? collection(firestore, 'users', user.uid, 'categories') : null,
     [firestore, user]
   );
-  const { data: categories, isLoading } = useCollection<Category>(categoriesQuery);
+  const { data: categories, isLoading } =
+    useCollection<Category>(categoriesQuery);
 
   return (
     <div className="flex flex-col gap-6">
@@ -35,9 +43,10 @@ export default function CategoriesPage() {
           {categories?.map((category) => {
             const Icon = iconMap[category.icon];
             return (
-              <div
+              <Link
                 key={category.id}
-                className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border bg-card p-6 text-center shadow-sm transition-transform hover:scale-105 hover:shadow-md"
+                href={`/add-transaction?categoryId=${category.id}&type=${category.type}`}
+                className="flex flex-col items-center justify-center gap-2 rounded-lg border bg-card p-6 text-center shadow-sm transition-transform hover:scale-105 hover:shadow-md"
                 style={{
                   borderColor: `${category.color}40`,
                   backgroundColor: `${category.color}10`,
@@ -47,7 +56,7 @@ export default function CategoriesPage() {
                   <Icon className="size-8" style={{ color: category.color }} />
                 )}
                 <span className="text-sm font-medium">{category.name}</span>
-              </div>
+              </Link>
             );
           })}
         </div>

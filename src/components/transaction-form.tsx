@@ -75,17 +75,15 @@ const transactionFormSchema = z.object({
 
 type TransactionFormValues = z.infer<typeof transactionFormSchema>;
 
-const defaultValues: Partial<TransactionFormValues> = {
-  type: 'expense',
-  date: new Date(),
-  amount: undefined,
-  description: '',
-  paymentMethod: '',
-  notes: '',
-  categoryId: '',
-};
+interface TransactionFormProps {
+  initialCategoryId?: string;
+  initialType?: 'income' | 'expense';
+}
 
-export function TransactionForm() {
+export function TransactionForm({
+  initialCategoryId,
+  initialType,
+}: TransactionFormProps) {
   const { toast } = useToast();
   const router = useRouter();
   const [isSuggesting, setIsSuggesting] = useState(false);
@@ -99,6 +97,16 @@ export function TransactionForm() {
   );
   const { data: categories, isLoading: categoriesLoading } =
     useCollection<Category>(categoriesQuery);
+
+  const defaultValues: Partial<TransactionFormValues> = {
+    type: initialType || 'expense',
+    date: new Date(),
+    amount: undefined,
+    description: '',
+    paymentMethod: '',
+    notes: '',
+    categoryId: initialCategoryId || '',
+  };
 
   const form = useForm<TransactionFormValues>({
     resolver: zodResolver(transactionFormSchema),
