@@ -17,6 +17,7 @@ import {
   ArrowDown,
   ArrowUp,
   Scale,
+  PlusCircle,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
@@ -50,6 +51,7 @@ import {
 } from '@/components/ui/card';
 import { usePrivacy } from '@/context/privacy-provider';
 import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 function groupTransactionsByDay(transactions: Transaction[]) {
   if (!transactions) return {};
@@ -293,6 +295,20 @@ export default function CashFlowPage() {
   return (
     <div className="flex flex-col gap-8">
       <PageHeader title="Fluxo de Caixa" />
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <Button asChild className="w-full sm:w-auto">
+          <Link href="/add-transaction?type=income">
+            <PlusCircle className="mr-2" />
+            Nova Receita
+          </Link>
+        </Button>
+        <Button asChild variant="outline" className="w-full sm:w-auto">
+          <Link href="/add-transaction?type=expense">
+            <PlusCircle className="mr-2" />
+            Nova Despesa
+          </Link>
+        </Button>
+      </div>
 
       <Card>
         <CardHeader>
