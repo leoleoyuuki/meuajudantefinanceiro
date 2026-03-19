@@ -1,20 +1,51 @@
 'use client';
 
-import { History, Home, Plus, PiggyBank, Tags } from 'lucide-react';
+import {
+  History,
+  Home,
+  Plus,
+  PiggyBank,
+  Tags,
+  TrendingUp,
+  ClipboardList,
+  Calculator,
+} from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { useDoc, useFirestore, useUser, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import type { UserProfile } from '@/lib/types';
 
-// Items for the tab bar, excluding the central action button.
-const navItems = [
+
+const personalNavItems = [
   { href: '/', icon: Home, label: 'Início' },
   { href: '/transactions', icon: History, label: 'Extrato' },
   { href: '/goals', icon: PiggyBank, label: 'Metas' },
   { href: '/categories', icon: Tags, label: 'Categorias' },
 ];
 
+const entrepreneurNavItems = [
+  { href: '/', icon: Home, label: 'Início' },
+  { href: '/cash-flow', icon: TrendingUp, label: 'Fluxo de Caixa' },
+  { href: '/accounts-receivable', icon: ClipboardList, label: 'A Receber' },
+  { href: '/budget-calculator', icon: Calculator, label: 'Calculadora' },
+];
+
+
 export function BottomNav() {
   const pathname = usePathname();
+  const { user } = useUser();
+  const firestore = useFirestore();
+
+  const userProfileQuery = useMemoFirebase(
+    () => (user ? doc(firestore, 'users', user.uid) : null),
+    [firestore, user]
+  );
+  const { data: userProfile } = useDoc<UserProfile>(userProfileQuery);
+  const isEntrepreneur = userProfile?.planType === 'entrepreneur';
+
+  const navItems = isEntrepreneur ? entrepreneurNavItems : personalNavItems;
 
   return (
     <footer className="fixed bottom-4 inset-x-4 z-50 h-20">

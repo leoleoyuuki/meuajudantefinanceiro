@@ -11,5 +11,6 @@ export const defaultCategories: Omit<Category, 'id' | 'userId' | 'createdAt' | '
     { name: 'Compras', icon: 'Gift', color: '#6366F1', type: 'expense' },
     { name: 'Assinaturas', icon: 'Repeat', color: '#0EA5E9', type: 'expense' },
     { name: 'Investimentos', icon: 'Target', color: '#8A4CDE', type: 'expense' },
+    { name: 'Fornecedores', icon: 'Truck', color: '#78716C', type: 'expense' },
     { name: 'Outros', icon: 'PiggyBank', color: '#14B8A6', type: 'expense' },
 ];

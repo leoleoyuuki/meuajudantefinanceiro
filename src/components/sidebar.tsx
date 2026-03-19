@@ -21,10 +21,13 @@ import {
   MoreHorizontal,
   LifeBuoy,
   Shield,
+  TrendingUp,
+  ClipboardList,
+  Calculator,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useUser, useAuth } from '@/firebase';
+import { useUser, useAuth, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import {
   DropdownMenu,
@@ -36,12 +39,22 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { Button } from './ui/button';
+import { doc } from 'firebase/firestore';
+import type { UserProfile } from '@/lib/types';
 
-const navItems = [
+
+const personalNavItems = [
   { href: '/', icon: Home, label: 'Início' },
   { href: '/transactions', icon: History, label: 'Extrato' },
   { href: '/goals', icon: PiggyBank, label: 'Metas' },
   { href: '/categories', icon: Tags, label: 'Categorias' },
+];
+
+const entrepreneurNavItems = [
+  { href: '/', icon: Home, label: 'Início' },
+  { href: '/cash-flow', icon: TrendingUp, label: 'Fluxo de Caixa' },
+  { href: '/accounts-receivable', icon: ClipboardList, label: 'A Receber' },
+  { href: '/budget-calculator', icon: Calculator, label: 'Calculadora' },
 ];
 
 const ADMIN_EMAIL = 'leo.yuuki@icloud.com';
@@ -50,7 +63,17 @@ export function AppSidebar() {
   const pathname = usePathname();
   const { user } = useUser();
   const auth = useAuth();
+  const firestore = useFirestore();
   const isAdmin = user?.email === ADMIN_EMAIL;
+  
+  const userProfileQuery = useMemoFirebase(
+    () => (user ? doc(firestore, 'users', user.uid) : null),
+    [firestore, user]
+  );
+  const { data: userProfile } = useDoc<UserProfile>(userProfileQuery);
+  const isEntrepreneur = userProfile?.planType === 'entrepreneur';
+
+  const navItems = isEntrepreneur ? entrepreneurNavItems : personalNavItems;
 
   const handleLogout = () => {
     if (auth) {

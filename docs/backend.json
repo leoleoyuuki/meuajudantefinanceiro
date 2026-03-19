@@ -583,6 +583,93 @@
         "createdAt",
         "updatedAt"
       ]
+    },
+    "Receivable": {
+      "title": "Account Receivable",
+      "type": "object",
+      "description": "Represents an amount owed to the entrepreneur by a client.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the receivable."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who owns this receivable."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the sale or service."
+        },
+        "clientName": {
+          "type": "string",
+          "description": "The name of the client."
+        },
+        "amount": {
+          "type": "number",
+          "description": "The amount to be received."
+        },
+        "dueDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date the payment is due."
+        },
+        "paidDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date the payment was received."
+        },
+        "status": {
+          "type": "string",
+          "description": "The status of the receivable ('pending', 'paid', 'overdue')."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "clientName",
+        "amount",
+        "dueDate",
+        "status"
+      ]
+    },
+    "Product": {
+      "title": "Product",
+      "type": "object",
+      "description": "Represents a product or service for budget and pricing calculation.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the product."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who owns this product."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the product or service."
+        },
+        "costPrice": {
+          "type": "number",
+          "description": "The total cost to produce or acquire the product."
+        },
+        "salePrice": {
+          "type": "number",
+          "description": "The final price for the customer."
+        },
+        "profitMargin": {
+          "type": "number",
+          "description": "The calculated profit margin percentage."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "name",
+        "costPrice",
+        "salePrice"
+      ]
     }
   },
   "auth": {
@@ -755,6 +842,46 @@
             {
               "name": "monthlySummaryId",
               "description": "The unique identifier for the MonthlySummary document (e.g., 'YYYY-MM')."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/receivables/{receivableId}",
+        "definition": {
+          "entityName": "Receivable",
+          "schema": {
+            "$ref": "#/backend/entities/Receivable"
+          },
+          "description": "Stores accounts receivable for an entrepreneur user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the User who owns this receivable."
+            },
+            {
+              "name": "receivableId",
+              "description": "The unique identifier for the Receivable document."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/products/{productId}",
+        "definition": {
+          "entityName": "Product",
+          "schema": {
+            "$ref": "#/backend/entities/Product"
+          },
+          "description": "Stores products for an entrepreneur user's budget calculations.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the User who owns this product."
+            },
+            {
+              "name": "productId",
+              "description": "The unique identifier for the Product document."
             }
           ]
         }

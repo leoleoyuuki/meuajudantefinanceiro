@@ -11,6 +11,10 @@ import {
   GraduationCap,
   HeartPulse,
   Target,
+  Truck,
+  TrendingUp,
+  ClipboardList,
+  Calculator,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -27,6 +31,10 @@ export const iconMap: { [key: string]: LucideIcon } = {
   GraduationCap,
   HeartPulse,
   Target,
+  Truck,
+  TrendingUp,
+  ClipboardList,
+  Calculator,
 };
 
 export const iconList = Object.keys(iconMap);
