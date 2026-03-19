@@ -113,6 +113,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
                 photoURL: firebaseUser.photoURL,
                 whatsapp: pendingWhatsapp || firebaseUser.phoneNumber || null,
                 role: role,
+                planType: 'personal',
                 createdAt: now,
                 subscriptionStatus: 'inactive',
                 subscriptionExpiresAt: null,

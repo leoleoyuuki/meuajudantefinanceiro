@@ -31,6 +31,10 @@
           "type": "string",
           "description": "The role of the user ('admin' or 'user')."
         },
+        "planType": {
+          "type": "string",
+          "description": "The user's subscription plan type ('personal' or 'entrepreneur')."
+        },
         "createdAt": {
           "type": "string",
           "format": "date-time"
@@ -58,6 +62,7 @@
         "uid",
         "createdAt",
         "role",
+        "planType",
         "subscriptionStatus"
       ]
     },

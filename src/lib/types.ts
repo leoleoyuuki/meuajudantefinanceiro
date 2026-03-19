@@ -7,6 +7,7 @@ export type UserProfile = {
   photoURL: string | null;
   whatsapp?: string | null;
   role: 'admin' | 'user';
+  planType: 'personal' | 'entrepreneur';
   createdAt: string;
   subscriptionStatus: 'active' | 'inactive';
   subscriptionExpiresAt: string | null;
