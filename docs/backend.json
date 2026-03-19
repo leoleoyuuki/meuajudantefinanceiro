@@ -75,6 +75,10 @@
           "type": "string",
           "description": "The unique ID of the activation code."
         },
+        "planType": {
+          "type": "string",
+          "description": "The subscription plan type this code unlocks ('personal' or 'entrepreneur')."
+        },
         "durationMonths": {
           "type": "number",
           "description": "How many months of subscription this code provides."
@@ -102,7 +106,8 @@
         "id",
         "durationMonths",
         "isUsed",
-        "createdAt"
+        "createdAt",
+        "planType"
       ]
     },
     "Category": {

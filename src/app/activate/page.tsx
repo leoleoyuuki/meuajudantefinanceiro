@@ -76,11 +76,15 @@ export default function ActivatePage() {
         if (codeData?.isUsed) {
           throw new Error('Este código já foi utilizado.');
         }
+        if (!codeData?.planType) {
+          throw new Error('Código inválido: tipo de plano não encontrado.');
+        }
 
         const now = new Date();
         const expiresAt = addMonths(now, codeData?.durationMonths);
 
         const subscriptionUpdateData = {
+          planType: codeData.planType,
           subscriptionStatus: 'active',
           subscriptionExpiresAt: expiresAt.toISOString(),
           subscriptionStartedAt: now.toISOString(),

@@ -17,6 +17,7 @@ export type UserProfile = {
 
 export type ActivationCode = {
   id: string;
+  planType: 'personal' | 'entrepreneur';
   durationMonths: number;
   isUsed: boolean;
   usedBy: string | null;

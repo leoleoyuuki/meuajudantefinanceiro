@@ -16,6 +16,8 @@ import { Input } from '@/components/ui/input';
 import { Loader2, Copy, Shield, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { doc, setDoc, collection } from 'firebase/firestore';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 
 const ADMIN_EMAIL = 'leo.yuuki@icloud.com';
 
@@ -26,6 +28,9 @@ export default function AdminPage() {
   const { toast } = useToast();
 
   const [duration, setDuration] = useState(1);
+  const [planType, setPlanType] = useState<'personal' | 'entrepreneur'>(
+    'personal'
+  );
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [hasCopied, setHasCopied] = useState(false);
@@ -59,6 +64,7 @@ export default function AdminPage() {
       await setDoc(newCodeRef, {
         id: code,
         durationMonths: duration,
+        planType: planType,
         isUsed: false,
         createdAt: new Date().toISOString(),
         usedBy: null,
@@ -115,11 +121,11 @@ export default function AdminPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
-            <div className="flex-1">
-              <label htmlFor="duration" className="text-sm font-medium">
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="duration" className="text-sm font-medium">
                 Duração da Assinatura (em meses)
-              </label>
+              </Label>
               <Input
                 id="duration"
                 type="number"
@@ -129,11 +135,52 @@ export default function AdminPage() {
                 className="mt-2"
               />
             </div>
-            <Button onClick={handleGenerateCode} disabled={isGenerating}>
-              {isGenerating && <Loader2 className="mr-2 animate-spin" />}
-              Gerar Código
-            </Button>
+            <div>
+              <Label className="text-sm font-medium">Tipo de Plano</Label>
+              <RadioGroup
+                value={planType}
+                onValueChange={(value: 'personal' | 'entrepreneur') =>
+                  setPlanType(value)
+                }
+                className="mt-2 grid grid-cols-2 gap-4"
+              >
+                <div>
+                  <RadioGroupItem
+                    value="personal"
+                    id="personal"
+                    className="peer sr-only"
+                  />
+                  <Label
+                    htmlFor="personal"
+                    className="flex cursor-pointer flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
+                  >
+                    Pessoal
+                  </Label>
+                </div>
+                <div>
+                  <RadioGroupItem
+                    value="entrepreneur"
+                    id="entrepreneur"
+                    className="peer sr-only"
+                  />
+                  <Label
+                    htmlFor="entrepreneur"
+                    className="flex cursor-pointer flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
+                  >
+                    Empreendedor
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
           </div>
+          <Button
+            onClick={handleGenerateCode}
+            disabled={isGenerating}
+            className="w-full sm:w-auto"
+          >
+            {isGenerating && <Loader2 className="mr-2 animate-spin" />}
+            Gerar Código
+          </Button>
 
           {generatedCode && (
             <div className="space-y-2 rounded-lg border bg-muted/50 p-4">
