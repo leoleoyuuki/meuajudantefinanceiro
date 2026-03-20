@@ -98,11 +98,11 @@ const SaleReceipt: React.FC<SaleReceiptProps> = ({ items, total, date }) => {
       <div ref={receiptRef} className="bg-white text-black p-6 rounded-lg shadow-md">
         <div className="flex flex-col items-center justify-center mb-6 text-center">
             <PiggyBank className="w-12 h-12 text-black mb-2" />
-            <h2 className="text-xl font-bold font-headline text-black">Meu Ajudante Financeiro</h2>
-            <p className="text-sm text-black">Comprovante de Venda</p>
+            <h2 className="text-2xl font-bold font-headline text-black">Meu Ajudante Financeiro</h2>
+            <p className="text-base text-black">Comprovante de Venda</p>
         </div>
         
-        <div className="text-xs text-black mb-4 flex justify-between">
+        <div className="text-sm font-medium text-black mb-4 flex justify-between">
             <span>{format(date, "d 'de' MMMM 'de' yyyy", { locale: ptBR })}</span>
             <span>{format(date, "HH:mm")}</span>
         </div>
@@ -111,23 +111,23 @@ const SaleReceipt: React.FC<SaleReceiptProps> = ({ items, total, date }) => {
           {items.map((item) => (
             <div key={item.product.id} className="flex justify-between items-start">
               <div className="flex-1">
-                <p className="font-semibold text-black">{item.product.name}</p>
-                <p className="text-xs text-black">
+                <p className="font-bold text-base text-black">{item.product.name}</p>
+                <p className="text-sm text-black">
                   {item.product.pricingModel === 'unit'
                     ? `${item.quantity} x ${formatCurrency(item.product.salePrice)}`
                     : `${item.quantity}g @ ${formatCurrency(item.product.salePrice)}/100g`}
                 </p>
               </div>
-              <p className="font-semibold text-black">{formatCurrency(calculateItemTotal(item))}</p>
+              <p className="font-bold text-base text-black">{formatCurrency(calculateItemTotal(item))}</p>
             </div>
           ))}
         </div>
 
-        <div className="flex justify-between items-center font-bold text-lg pt-4 text-black">
+        <div className="flex justify-between items-center font-bold text-xl pt-4 text-black">
           <span>TOTAL</span>
           <span>{formatCurrency(total)}</span>
         </div>
-        <p className="text-center text-xs text-black/60 mt-6">Obrigado pela sua compra!</p>
+        <p className="text-center text-sm text-black mt-6">Obrigado pela sua compra!</p>
       </div>
       <div className="grid grid-cols-2 gap-2">
         <Button variant="outline" onClick={handleDownload}>
