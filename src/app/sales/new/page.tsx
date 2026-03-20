@@ -141,6 +141,7 @@ export default function NewSalePage() {
         type: 'income',
         description: `Venda de ${validCart.length} ${validCart.length > 1 ? 'tipos de produtos' : 'tipo de produto'}`,
         categoryId: salesCategory.id,
+        date: now.toISOString(),
         paymentMethod: 'Venda',
         createdAt: now.toISOString(),
         updatedAt: now.toISOString(),
