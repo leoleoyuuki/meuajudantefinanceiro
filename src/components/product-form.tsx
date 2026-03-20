@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -20,12 +19,14 @@ import { useRouter } from 'next/navigation';
 import { useUser, useFirestore, setDocumentNonBlocking } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 const productFormSchema = z.object({
   name: z.string().min(2, {
     message: 'Nome deve ter pelo menos 2 caracteres.',
   }),
   description: z.string().optional(),
+  pricingModel: z.enum(['unit', 'weight']),
   costPrice: z.coerce.number().positive({
     message: 'O custo deve ser um número positivo.',
   }),
@@ -47,8 +48,11 @@ export function ProductForm() {
     defaultValues: {
       name: '',
       description: '',
+      pricingModel: 'unit',
     },
   });
+
+  const pricingModel = form.watch('pricingModel');
 
   async function onSubmit(data: ProductFormValues) {
     if (!user || !firestore) return;
@@ -57,13 +61,17 @@ export function ProductForm() {
     const docRef = doc(collectionRef);
     const docId = docRef.id;
 
-    const profitMargin = ((data.salePrice - data.costPrice) / data.salePrice) * 100;
+    const profitMargin =
+      data.salePrice > 0
+        ? ((data.salePrice - data.costPrice) / data.salePrice) * 100
+        : 0;
 
     const productData = {
       id: docId,
       userId: user.uid,
       name: data.name,
       description: data.description || '',
+      pricingModel: data.pricingModel,
       costPrice: data.costPrice,
       salePrice: data.salePrice,
       profitMargin: profitMargin,
@@ -88,10 +96,7 @@ export function ProductForm() {
             <FormItem>
               <FormLabel>Nome do Produto</FormLabel>
               <FormControl>
-                <Input
-                  placeholder="Ex: Bolo de Chocolate"
-                  {...field}
-                />
+                <Input placeholder="Ex: Bolo de Chocolate" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -116,13 +121,58 @@ export function ProductForm() {
           )}
         />
 
+        <FormField
+          control={form.control}
+          name="pricingModel"
+          render={({ field }) => (
+            <FormItem className="space-y-3">
+              <FormLabel>Modelo de Precificação</FormLabel>
+              <FormControl>
+                <RadioGroup
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                  className="flex items-center gap-4"
+                >
+                  <FormItem className="flex items-center space-x-2 space-y-0">
+                    <FormControl>
+                      <RadioGroupItem value="unit" id="unit" />
+                    </FormControl>
+                    <FormLabel
+                      htmlFor="unit"
+                      className="cursor-pointer font-normal"
+                    >
+                      Por Unidade
+                    </FormLabel>
+                  </FormItem>
+                  <FormItem className="flex items-center space-x-2 space-y-0">
+                    <FormControl>
+                      <RadioGroupItem value="weight" id="weight" />
+                    </FormControl>
+                    <FormLabel
+                      htmlFor="weight"
+                      className="cursor-pointer font-normal"
+                    >
+                      Por Peso (g)
+                    </FormLabel>
+                  </FormItem>
+                </RadioGroup>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
         <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}
             name="costPrice"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Custo de Produção</FormLabel>
+                <FormLabel>
+                  {pricingModel === 'unit'
+                    ? 'Custo de Produção'
+                    : 'Custo por Grama'}
+                </FormLabel>
                 <FormControl>
                   <div className="relative">
                     <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-muted-foreground">
@@ -131,6 +181,7 @@ export function ProductForm() {
                     <Input
                       type="number"
                       placeholder="0,00"
+                      step="0.01"
                       {...field}
                       className="pl-10"
                     />
@@ -145,7 +196,11 @@ export function ProductForm() {
             name="salePrice"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Preço de Venda</FormLabel>
+                <FormLabel>
+                  {pricingModel === 'unit'
+                    ? 'Preço de Venda'
+                    : 'Preço de Venda por Grama'}
+                </FormLabel>
                 <FormControl>
                   <div className="relative">
                     <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-muted-foreground">
@@ -154,6 +209,7 @@ export function ProductForm() {
                     <Input
                       type="number"
                       placeholder="0,00"
+                      step="0.01"
                       {...field}
                       className="pl-10"
                     />

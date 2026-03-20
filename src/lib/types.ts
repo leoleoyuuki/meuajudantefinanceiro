@@ -95,6 +95,7 @@ export type Product = {
   costPrice: number;
   salePrice: number;
   profitMargin?: number;
+  pricingModel: 'unit' | 'weight';
 };
 
 
