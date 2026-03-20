@@ -8,6 +8,7 @@ import type {
   MonthlySummary,
   QueryDocumentSnapshot,
   UserProfile,
+  Product,
 } from '@/lib/types';
 import { cn, formatCurrency } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -66,6 +67,14 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import SaleReceipt from '@/components/sales/sale-receipt';
+
+// This type is used inside SaleReceipt
+type CartItem = {
+    product: Product;
+    quantity: number;
+};
+
 
 function groupTransactionsByDay(transactions: Transaction[]) {
   if (!transactions) return {};
@@ -99,6 +108,8 @@ export default function CashFlowPage() {
   const [isBalanceDialogOpen, setIsBalanceDialogOpen] = useState(false);
   const [newInitialBalance, setNewInitialBalance] = useState('');
   const [isSettingBalance, setIsSettingBalance] = useState(false);
+  
+  const [selectedSale, setSelectedSale] = useState<Transaction | null>(null);
 
   const userProfileQuery = useMemoFirebase(
     () => (user ? doc(firestore, 'users', user.uid) : null),
@@ -301,6 +312,28 @@ export default function CashFlowPage() {
     }
   };
 
+  const handleTransactionClick = (transaction: Transaction) => {
+    if (transaction.items && transaction.items.length > 0) {
+      setSelectedSale(transaction);
+    }
+  };
+
+  const handleDialogClose = () => {
+      setSelectedSale(null);
+  };
+  
+  const receiptItems: CartItem[] | null = selectedSale?.items ? selectedSale.items.map(item => ({
+      quantity: item.quantity,
+      product: {
+          id: item.productId,
+          name: item.name,
+          pricingModel: item.pricingModel,
+          salePrice: item.salePrice,
+          userId: selectedSale.userId,
+          costPrice: 0, 
+      }
+  })) : null;
+
   const selectedSummary = useMemo(() => {
     return summaries?.find((s) => s.id === selectedMonth);
   }, [selectedMonth, summaries]);
@@ -502,10 +535,15 @@ export default function CashFlowPage() {
                         transaction.category &&
                         iconMap[transaction.category.icon];
                       const color = transaction.category?.color || '#888';
+                      const isSale = transaction.items && transaction.items.length > 0;
                       return (
                         <div
                           key={transaction.id}
-                          className="flex items-center justify-between rounded-lg bg-card p-3 shadow-sm"
+                          className={cn(
+                            "flex items-center justify-between rounded-lg bg-card p-3 shadow-sm",
+                            isSale && "cursor-pointer transition-colors hover:bg-muted/50"
+                          )}
+                          onClick={() => handleTransactionClick(transaction)}
                         >
                           <div className="flex items-center gap-3">
                             <div
@@ -605,6 +643,29 @@ export default function CashFlowPage() {
             </Button>
           </DialogFooter>
         </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!selectedSale} onOpenChange={(isOpen) => !isOpen && handleDialogClose()}>
+          <DialogContent className="max-w-sm">
+              <DialogHeader>
+                  <DialogTitle>Comprovante de Venda</DialogTitle>
+                  <DialogDescription>
+                      Detalhes da venda registrada.
+                  </DialogDescription>
+              </DialogHeader>
+              {selectedSale && receiptItems && (
+                  <SaleReceipt 
+                      items={receiptItems} 
+                      total={selectedSale.amount}
+                      date={new Date(selectedSale.date)}
+                  />
+              )}
+              <DialogFooter>
+                  <Button variant="outline" onClick={handleDialogClose}>
+                      Fechar
+                  </Button>
+              </DialogFooter>
+          </DialogContent>
       </Dialog>
     </div>
   );

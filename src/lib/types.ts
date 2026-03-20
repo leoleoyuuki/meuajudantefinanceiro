@@ -107,5 +107,3 @@ export type Product = {
 
 
 export type { QueryDocumentSnapshot };
-
-    
