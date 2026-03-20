@@ -104,7 +104,7 @@ export function BottomNav() {
         {/* Centered "Add" button */}
         <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-center">
           <Link
-            href="/add-transaction"
+            href={isEntrepreneur ? '/sales/new' : '/add-transaction'}
             className={cn(
               'pointer-events-auto relative flex size-16 items-center justify-center rounded-full text-white shadow-lg transition-transform hover:scale-105',
               'overflow-hidden'
@@ -122,7 +122,7 @@ export function BottomNav() {
               }}
             />
             <Plus className="relative h-7 w-7" />
-            <span className="sr-only">Adicionar</span>
+            <span className="sr-only">{isEntrepreneur ? 'Nova Venda' : 'Adicionar'}</span>
           </Link>
         </div>
       </div>

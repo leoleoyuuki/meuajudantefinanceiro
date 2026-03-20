@@ -1,6 +1,7 @@
 import type { Category } from './types';
 
 export const defaultCategories: Omit<Category, 'id' | 'userId' | 'createdAt' | 'updatedAt'>[] = [
+    { name: 'Vendas', icon: 'TrendingUp', color: '#10B981', type: 'income' },
     { name: 'Salário', icon: 'Landmark', color: '#22C55E', type: 'income' },
     { name: 'Alimentação', icon: 'Utensils', color: '#F59E0B', type: 'expense' },
     { name: 'Transporte', icon: 'Car', color: '#10B981', type: 'expense' },

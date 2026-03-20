@@ -35,6 +35,7 @@ import type {
   GoalsSummary,
   Transaction,
   Category,
+  UserProfile,
 } from '@/lib/types';
 import { useMemo, useEffect, useState } from 'react';
 import { format } from 'date-fns';
@@ -50,6 +51,14 @@ export default function DashboardPage() {
   const { isBalanceVisible, toggleBalanceVisibility } = usePrivacy();
   const firestore = useFirestore();
   const { user } = useUser();
+
+  const userProfileQuery = useMemoFirebase(
+    () => (user ? doc(firestore, 'users', user.uid) : null),
+    [firestore, user]
+  );
+  const { data: userProfile, isLoading: profileLoading } =
+    useDoc<UserProfile>(userProfileQuery);
+  const isEntrepreneur = userProfile?.planType === 'entrepreneur';
 
   const monthlySummariesQuery = useMemoFirebase(() => {
     if (!user) return null;
@@ -268,7 +277,8 @@ export default function DashboardPage() {
     goalsSummaryLoading ||
     firstGoalLoading ||
     transactionsLoading ||
-    categoriesLoading;
+    categoriesLoading ||
+    profileLoading;
 
   if (isLoading) {
     return (
@@ -422,12 +432,29 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex flex-col gap-6 lg:col-span-1">
-          <Button asChild className="hidden w-full lg:flex">
-            <Link href="/add-transaction">
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Novo Lançamento
-            </Link>
-          </Button>
+          {isEntrepreneur ? (
+            <div className="hidden w-full lg:flex lg:flex-col lg:gap-2">
+              <Button asChild className="w-full">
+                <Link href="/sales/new">
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Nova Venda
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="w-full">
+                <Link href="/add-transaction">
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Lançamento Manual
+                </Link>
+              </Button>
+            </div>
+          ) : (
+            <Button asChild className="hidden w-full lg:flex">
+              <Link href="/add-transaction">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Novo Lançamento
+              </Link>
+            </Button>
+          )}
           <GoalsProgressCard
             progressPercentage={goalsData.overallProgress}
             isBalanceVisible={isBalanceVisible}
@@ -506,12 +533,21 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <Link href="/add-transaction">
-        <Button className="fixed bottom-6 right-6 z-50 hidden h-14 w-14 items-center justify-center rounded-full shadow-lg md:flex lg:hidden">
-          <PlusCircle className="h-7 w-7" />
-          <span className="sr-only">Novo Lançamento</span>
-        </Button>
-      </Link>
+      {isEntrepreneur ? (
+        <Link href="/sales/new">
+          <Button className="fixed bottom-6 right-6 z-50 hidden h-14 w-14 items-center justify-center rounded-full shadow-lg md:flex lg:hidden">
+            <PlusCircle className="h-7 w-7" />
+            <span className="sr-only">Nova Venda</span>
+          </Button>
+        </Link>
+      ) : (
+        <Link href="/add-transaction">
+          <Button className="fixed bottom-6 right-6 z-50 hidden h-14 w-14 items-center justify-center rounded-full shadow-lg md:flex lg:hidden">
+            <PlusCircle className="h-7 w-7" />
+            <span className="sr-only">Novo Lançamento</span>
+          </Button>
+        </Link>
+      )}
     </div>
   );
 }
