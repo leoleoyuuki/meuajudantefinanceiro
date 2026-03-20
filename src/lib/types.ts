@@ -95,8 +95,10 @@ export type Product = {
   costPrice: number;
   salePrice: number;
   profitMargin?: number;
-  pricingModel: 'unit' | 'weight';
+  pricingModel: 'unit' | 'weight_100g';
 };
 
 
 export type { QueryDocumentSnapshot };
+
+    

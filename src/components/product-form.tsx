@@ -26,7 +26,7 @@ const productFormSchema = z.object({
     message: 'Nome deve ter pelo menos 2 caracteres.',
   }),
   description: z.string().optional(),
-  pricingModel: z.enum(['unit', 'weight']),
+  pricingModel: z.enum(['unit', 'weight_100g']),
   costPrice: z.coerce.number().positive({
     message: 'O custo deve ser um número positivo.',
   }),
@@ -146,13 +146,13 @@ export function ProductForm() {
                   </FormItem>
                   <FormItem className="flex items-center space-x-2 space-y-0">
                     <FormControl>
-                      <RadioGroupItem value="weight" id="weight" />
+                      <RadioGroupItem value="weight_100g" id="weight_100g" />
                     </FormControl>
                     <FormLabel
-                      htmlFor="weight"
+                      htmlFor="weight_100g"
                       className="cursor-pointer font-normal"
                     >
-                      Por Peso (g)
+                      Por Peso (100g)
                     </FormLabel>
                   </FormItem>
                 </RadioGroup>
@@ -171,7 +171,7 @@ export function ProductForm() {
                 <FormLabel>
                   {pricingModel === 'unit'
                     ? 'Custo de Produção'
-                    : 'Custo por Grama'}
+                    : 'Custo a cada 100g'}
                 </FormLabel>
                 <FormControl>
                   <div className="relative">
@@ -199,7 +199,7 @@ export function ProductForm() {
                 <FormLabel>
                   {pricingModel === 'unit'
                     ? 'Preço de Venda'
-                    : 'Preço de Venda por Grama'}
+                    : 'Preço de Venda a cada 100g'}
                 </FormLabel>
                 <FormControl>
                   <div className="relative">
@@ -237,3 +237,5 @@ export function ProductForm() {
     </Form>
   );
 }
+
+    

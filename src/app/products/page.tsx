@@ -58,11 +58,11 @@ export default function ProductsPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex justify-between rounded-lg border bg-muted/30 p-3 text-sm">
-                  <span className="text-muted-foreground">{product.pricingModel === 'unit' ? 'Custo' : 'Custo / g'}</span>
+                  <span className="text-muted-foreground">{product.pricingModel === 'unit' ? 'Custo' : 'Custo / 100g'}</span>
                   <span className="font-semibold">{formatCurrency(product.costPrice)}</span>
                 </div>
                 <div className="flex justify-between rounded-lg border bg-muted/30 p-3 text-sm">
-                  <span className="text-muted-foreground">{product.pricingModel === 'unit' ? 'Preço de Venda' : 'Preço de Venda / g'}</span>
+                  <span className="text-muted-foreground">{product.pricingModel === 'unit' ? 'Preço de Venda' : 'Preço de Venda / 100g'}</span>
                   <span className="font-semibold">{formatCurrency(product.salePrice)}</span>
                 </div>
                 {product.profitMargin !== undefined && (
@@ -98,3 +98,5 @@ export default function ProductsPage() {
     </div>
   );
 }
+
+    
