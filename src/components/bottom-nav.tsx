@@ -9,6 +9,8 @@ import {
   TrendingUp,
   ClipboardList,
   Package,
+  ShoppingCart,
+  PlusCircle,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -16,7 +18,15 @@ import { cn } from '@/lib/utils';
 import { useDoc, useFirestore, useUser, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
-
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
+import { Button } from './ui/button';
+import { useState } from 'react';
 
 const personalNavItems = [
   { href: '/', icon: Home, label: 'Início' },
@@ -32,11 +42,11 @@ const entrepreneurNavItems = [
   { href: '/products', icon: Package, label: 'Produtos' },
 ];
 
-
 export function BottomNav() {
   const pathname = usePathname();
   const { user } = useUser();
   const firestore = useFirestore();
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const userProfileQuery = useMemoFirebase(
     () => (user ? doc(firestore, 'users', user.uid) : null),
@@ -46,6 +56,24 @@ export function BottomNav() {
   const isEntrepreneur = userProfile?.planType === 'entrepreneur';
 
   const navItems = isEntrepreneur ? entrepreneurNavItems : personalNavItems;
+
+  const FabButton = ({ isEntrepreneur }: { isEntrepreneur?: boolean }) => (
+    <div
+      className={cn(
+        'pointer-events-auto relative flex size-16 items-center justify-center rounded-full text-white shadow-lg transition-transform hover:scale-105',
+        'overflow-hidden'
+      )}
+      style={{
+        background:
+          'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.75) 100%)',
+      }}
+    >
+      <Plus className="relative h-7 w-7" />
+      <span className="sr-only">
+        {isEntrepreneur ? 'Nova Ação' : 'Adicionar'}
+      </span>
+    </div>
+  );
 
   return (
     <footer className="fixed bottom-4 inset-x-4 z-50 h-20">
@@ -103,27 +131,47 @@ export function BottomNav() {
 
         {/* Centered "Add" button */}
         <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-center">
-          <Link
-            href={isEntrepreneur ? '/sales/new' : '/add-transaction'}
-            className={cn(
-              'pointer-events-auto relative flex size-16 items-center justify-center rounded-full text-white shadow-lg transition-transform hover:scale-105',
-              'overflow-hidden'
-            )}
-            style={{
-              background:
-                'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.75) 100%)',
-            }}
-          >
-            <div
-              className="pointer-events-none absolute inset-0 opacity-[0.06]"
-              style={{
-                backgroundImage:
-                  'repeating-linear-gradient(0deg, transparent, transparent 24px, currentColor 24px, currentColor 25px), repeating-linear-gradient(90deg, transparent, transparent 24px, currentColor 24px, currentColor 25px)',
-              }}
-            />
-            <Plus className="relative h-7 w-7" />
-            <span className="sr-only">{isEntrepreneur ? 'Nova Venda' : 'Adicionar'}</span>
-          </Link>
+          {isEntrepreneur ? (
+            <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+              <SheetTrigger asChild>
+                <button className="p-0 border-none bg-transparent h-auto w-auto">
+                  <FabButton isEntrepreneur />
+                </button>
+              </SheetTrigger>
+              <SheetContent side="bottom" className="rounded-t-2xl">
+                <SheetHeader>
+                  <SheetTitle>O que você deseja fazer?</SheetTitle>
+                </SheetHeader>
+                <div className="grid gap-4 py-6">
+                  <Button
+                    asChild
+                    size="lg"
+                    onClick={() => setSheetOpen(false)}
+                  >
+                    <Link href="/sales/new">
+                      <ShoppingCart className="mr-2 h-5 w-5" />
+                      Registrar Venda
+                    </Link>
+                  </Button>
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="lg"
+                    onClick={() => setSheetOpen(false)}
+                  >
+                    <Link href="/add-transaction">
+                      <PlusCircle className="mr-2 h-5 w-5" />
+                      Lançamento Manual
+                    </Link>
+                  </Button>
+                </div>
+              </SheetContent>
+            </Sheet>
+          ) : (
+            <Link href="/add-transaction">
+              <FabButton />
+            </Link>
+          )}
         </div>
       </div>
     </footer>
