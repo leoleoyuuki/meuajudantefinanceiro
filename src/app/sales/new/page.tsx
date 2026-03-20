@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
@@ -14,16 +14,27 @@ import { formatCurrency } from '@/lib/utils';
 import { Loader2, Plus, ShoppingCart, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import SaleReceipt from '@/components/sales/sale-receipt';
 
 type CartItem = {
   product: Product;
   quantity: number; // For 'unit' it's the count, for 'weight_100g' it's grams.
 };
 
+type SaleDetails = {
+  items: CartItem[];
+  total: number;
+  date: Date;
+};
+
 export default function NewSalePage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showReceipt, setShowReceipt] = useState(false);
+  const [lastSale, setLastSale] = useState<SaleDetails | null>(null);
+
   const { toast } = useToast();
   const router = useRouter();
 
@@ -140,8 +151,17 @@ export default function NewSalePage() {
         }
         return `${item.quantity}g ${item.product.name}`;
     }).join(', ');
+    
+    const itemsSold = validCart.map(item => ({
+        productId: item.product.id,
+        name: item.product.name,
+        quantity: item.quantity,
+        pricingModel: item.product.pricingModel,
+        salePrice: item.product.salePrice,
+    }));
 
-    const transactionData: Omit<Transaction, 'category'> = {
+
+    const transactionData: Omit<Transaction, 'category'> & { items?: any[] } = {
         id: transactionDocRef.id,
         userId: user.uid,
         amount: total,
@@ -152,6 +172,7 @@ export default function NewSalePage() {
         paymentMethod: 'Venda',
         createdAt: now.toISOString(),
         updatedAt: now.toISOString(),
+        items: itemsSold,
     };
     
     setDocumentNonBlocking(transactionDocRef, transactionData, {});
@@ -193,14 +214,23 @@ export default function NewSalePage() {
         title: 'Venda registrada!',
         description: `Receita de ${formatCurrency(total)} adicionada.`,
     });
-
+    
+    setLastSale({ items: validCart, total: total, date: now });
+    setShowReceipt(true);
+    setCart([]);
     setIsSubmitting(false);
-    router.push('/');
   };
+  
+  const handleCloseReceipt = () => {
+    setShowReceipt(false);
+    setLastSale(null);
+    router.push('/');
+  }
 
   const isLoading = productsLoading || categoriesLoading;
 
   return (
+    <>
     <div className="flex flex-col gap-6">
       <PageHeader title="Registrar Nova Venda" />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -297,5 +327,30 @@ export default function NewSalePage() {
         </Card>
       </div>
     </div>
+    
+    <Dialog open={showReceipt} onOpenChange={setShowReceipt}>
+        <DialogContent className="max-w-sm">
+            <DialogHeader>
+                <DialogTitle>Comprovante de Venda</DialogTitle>
+                <DialogDescription>
+                    Venda registrada com sucesso. Compartilhe o comprovante com seu cliente.
+                </DialogDescription>
+            </DialogHeader>
+            {lastSale && (
+                <SaleReceipt 
+                    items={lastSale.items} 
+                    total={lastSale.total}
+                    date={lastSale.date}
+                />
+            )}
+            <DialogFooter>
+                <Button variant="outline" onClick={handleCloseReceipt}>
+                    Fechar
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
+
+    </>
   );
 }

@@ -37,6 +37,13 @@ export type Transaction = {
   date: string;
   paymentMethod: string;
   notes?: string;
+  items?: {
+      productId: string;
+      name: string;
+      quantity: number;
+      pricingModel: 'unit' | 'weight_100g';
+      salePrice: number;
+  }[];
   createdAt: string;
   updatedAt: string;
 };
