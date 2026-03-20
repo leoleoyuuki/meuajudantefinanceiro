@@ -19,6 +19,7 @@ import {
   ArrowUp,
   Scale,
   PlusCircle,
+  Pencil,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
@@ -37,6 +38,7 @@ import {
   limit,
   startAfter,
   doc,
+  updateDoc,
 } from 'firebase/firestore';
 import { useMemo, useState, useEffect } from 'react';
 import {
@@ -55,6 +57,15 @@ import {
 import { usePrivacy } from '@/context/privacy-provider';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
 
 function groupTransactionsByDay(transactions: Transaction[]) {
   if (!transactions) return {};
@@ -81,8 +92,13 @@ export default function CashFlowPage() {
   const firestore = useFirestore();
   const { user } = useUser();
   const { isBalanceVisible } = usePrivacy();
+  const { toast } = useToast();
   const censoredPlaceholder = 'R$ ●●●●●';
   const [searchTerm, setSearchTerm] = useState('');
+
+  const [isBalanceDialogOpen, setIsBalanceDialogOpen] = useState(false);
+  const [newInitialBalance, setNewInitialBalance] = useState('');
+  const [isSettingBalance, setIsSettingBalance] = useState(false);
 
   const userProfileQuery = useMemoFirebase(
     () => (user ? doc(firestore, 'users', user.uid) : null),
@@ -251,6 +267,40 @@ export default function CashFlowPage() {
   };
   // End of transaction fetching logic
 
+  const handleSetInitialBalance = async () => {
+    if (!user || !firestore) return;
+    setIsSettingBalance(true);
+
+    const balance = parseFloat(newInitialBalance.replace(',', '.'));
+    if (isNaN(balance) || balance < 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Valor inválido',
+        description: 'Por favor, insira um número positivo.',
+      });
+      setIsSettingBalance(false);
+      return;
+    }
+
+    const userRef = doc(firestore, 'users', user.uid);
+    try {
+      await updateDoc(userRef, { initialBalance: balance });
+      toast({
+        title: 'Saldo inicial definido!',
+        description: 'Seu fluxo de caixa foi atualizado.',
+      });
+      setIsBalanceDialogOpen(false);
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao salvar',
+        description: 'Não foi possível definir o saldo inicial.',
+      });
+    } finally {
+      setIsSettingBalance(false);
+    }
+  };
+
   const selectedSummary = useMemo(() => {
     return summaries?.find((s) => s.id === selectedMonth);
   }, [selectedMonth, summaries]);
@@ -351,7 +401,22 @@ export default function CashFlowPage() {
             </h3>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Saldo Inicial</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-muted-foreground">Saldo Inicial</span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                    onClick={() => {
+                      setNewInitialBalance(
+                        initialBalance > 0 ? initialBalance.toString() : ''
+                      );
+                      setIsBalanceDialogOpen(true);
+                    }}
+                  >
+                    <Pencil className="h-3 w-3" />
+                  </Button>
+                </div>
                 <span>
                   {isBalanceVisible
                     ? formatCurrency(initialBalance)
@@ -503,6 +568,44 @@ export default function CashFlowPage() {
           </div>
         )}
       </div>
+
+      <Dialog open={isBalanceDialogOpen} onOpenChange={setIsBalanceDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Definir Saldo Inicial</DialogTitle>
+            <DialogDescription>
+              Este valor será o ponto de partida para o seu fluxo de caixa.
+              Defina com cuidado, pois não deve ser alterado com frequência.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="relative">
+              <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-muted-foreground">
+                R$
+              </span>
+              <Input
+                id="initialBalance"
+                type="number"
+                value={newInitialBalance}
+                onChange={(e) => setNewInitialBalance(e.target.value)}
+                placeholder="0,00"
+                className="pl-10 text-lg"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              onClick={handleSetInitialBalance}
+              disabled={isSettingBalance}
+            >
+              {isSettingBalance && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
