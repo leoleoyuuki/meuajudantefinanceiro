@@ -134,12 +134,19 @@ export default function NewSalePage() {
     const transactionCollectionRef = collection(firestore, 'users', user.uid, 'transactions');
     const transactionDocRef = doc(transactionCollectionRef);
 
+    const saleDescription = validCart.map(item => {
+        if (item.product.pricingModel === 'unit') {
+            return `${item.quantity}x ${item.product.name}`;
+        }
+        return `${item.quantity}g ${item.product.name}`;
+    }).join(', ');
+
     const transactionData: Omit<Transaction, 'category'> = {
         id: transactionDocRef.id,
         userId: user.uid,
         amount: total,
         type: 'income',
-        description: `Venda de ${validCart.length} ${validCart.length > 1 ? 'tipos de produtos' : 'tipo de produto'}`,
+        description: `Venda: ${saleDescription}`,
         categoryId: salesCategory.id,
         date: now.toISOString(),
         paymentMethod: 'Venda',
