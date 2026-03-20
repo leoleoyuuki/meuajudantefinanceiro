@@ -102,7 +102,7 @@ const SaleReceipt: React.FC<SaleReceiptProps> = ({ items, total, date }) => {
             <p className="text-base text-black">Comprovante de Venda</p>
         </div>
         
-        <div className="text-sm font-medium text-black mb-4 flex justify-between">
+        <div className="text-base font-bold text-black mb-4 flex justify-between">
             <span>{format(date, "d 'de' MMMM 'de' yyyy", { locale: ptBR })}</span>
             <span>{format(date, "HH:mm")}</span>
         </div>
@@ -111,8 +111,8 @@ const SaleReceipt: React.FC<SaleReceiptProps> = ({ items, total, date }) => {
           {items.map((item) => (
             <div key={item.product.id} className="flex justify-between items-start">
               <div className="flex-1">
-                <p className="font-bold text-base text-black">{item.product.name}</p>
-                <p className="text-sm text-black">
+                <p className="font-bold text-lg text-black">{item.product.name}</p>
+                <p className="text-base text-black">
                   {item.product.pricingModel === 'unit'
                     ? `${item.quantity} x ${formatCurrency(item.product.salePrice)}`
                     : `${item.quantity}g @ ${formatCurrency(item.product.salePrice)}/100g`}
@@ -127,7 +127,7 @@ const SaleReceipt: React.FC<SaleReceiptProps> = ({ items, total, date }) => {
           <span>TOTAL</span>
           <span>{formatCurrency(total)}</span>
         </div>
-        <p className="text-center text-sm text-black mt-6">Obrigado pela sua compra!</p>
+        <p className="text-center text-base font-bold text-black mt-6">Obrigado pela sua compra!</p>
       </div>
       <div className="grid grid-cols-2 gap-2">
         <Button variant="outline" onClick={handleDownload}>
