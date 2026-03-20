@@ -107,23 +107,32 @@ export default function NewSalePage() {
         return;
     }
 
-
     setIsSubmitting(true);
     
-    const salesCategory = categories.find(c => c.name === 'Vendas' && c.type === 'income');
+    let salesCategory = categories.find(c => c.name === 'Vendas' && c.type === 'income');
+    const now = new Date();
+
     if (!salesCategory) {
-        toast({
-            variant: 'destructive',
-            title: 'Erro',
-            description: 'Categoria "Vendas" não encontrada. Por favor, crie uma categoria de receita chamada "Vendas".'
-        });
-        setIsSubmitting(false);
-        return;
+        const categoriesColRef = collection(firestore, 'users', user.uid, 'categories');
+        const newCategoryRef = doc(categoriesColRef);
+        
+        const newCategoryData: Category = {
+            id: newCategoryRef.id,
+            userId: user.uid,
+            name: 'Vendas',
+            icon: 'TrendingUp',
+            color: '#10B981',
+            type: 'income',
+            createdAt: now.toISOString(),
+            updatedAt: now.toISOString(),
+        };
+        
+        setDocumentNonBlocking(newCategoryRef, newCategoryData, {});
+        salesCategory = newCategoryData;
     }
 
     const transactionCollectionRef = collection(firestore, 'users', user.uid, 'transactions');
     const transactionDocRef = doc(transactionCollectionRef);
-    const now = new Date();
 
     const transactionData: Omit<Transaction, 'category'> = {
         id: transactionDocRef.id,
@@ -132,7 +141,6 @@ export default function NewSalePage() {
         type: 'income',
         description: `Venda de ${validCart.length} ${validCart.length > 1 ? 'tipos de produtos' : 'tipo de produto'}`,
         categoryId: salesCategory.id,
-        date: now.toISOString(),
         paymentMethod: 'Venda',
         createdAt: now.toISOString(),
         updatedAt: now.toISOString(),
