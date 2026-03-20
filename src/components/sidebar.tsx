@@ -23,7 +23,7 @@ import {
   Shield,
   TrendingUp,
   ClipboardList,
-  Calculator,
+  Package,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -54,7 +54,7 @@ const entrepreneurNavItems = [
   { href: '/', icon: Home, label: 'Início' },
   { href: '/cash-flow', icon: TrendingUp, label: 'Fluxo de Caixa' },
   { href: '/accounts-receivable', icon: ClipboardList, label: 'A Receber' },
-  { href: '/budget-calculator', icon: Calculator, label: 'Calculadora' },
+  { href: '/products', icon: Package, label: 'Produtos' },
 ];
 
 const ADMIN_EMAIL = 'leo.yuuki@icloud.com';

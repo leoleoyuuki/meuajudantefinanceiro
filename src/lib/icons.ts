@@ -15,6 +15,7 @@ import {
   TrendingUp,
   ClipboardList,
   Calculator,
+  Package,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -35,6 +36,7 @@ export const iconMap: { [key: string]: LucideIcon } = {
   TrendingUp,
   ClipboardList,
   Calculator,
+  Package,
 };
 
 export const iconList = Object.keys(iconMap);

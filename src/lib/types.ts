@@ -87,4 +87,15 @@ export type MonthlySummary = {
   updatedAt: string;
 };
 
+export type Product = {
+  id: string;
+  userId: string;
+  name: string;
+  description?: string;
+  costPrice: number;
+  salePrice: number;
+  profitMargin?: number;
+};
+
+
 export type { QueryDocumentSnapshot };

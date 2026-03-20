@@ -654,6 +654,10 @@
           "type": "string",
           "description": "The name of the product or service."
         },
+        "description": {
+          "type": "string",
+          "description": "A brief description of the product."
+        },
         "costPrice": {
           "type": "number",
           "description": "The total cost to produce or acquire the product."
