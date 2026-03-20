@@ -7,7 +7,6 @@ import {
   PiggyBank,
   Tags,
   TrendingUp,
-  ClipboardList,
   Package,
   ShoppingCart,
   PlusCircle,
@@ -38,7 +37,7 @@ const personalNavItems = [
 const entrepreneurNavItems = [
   { href: '/', icon: Home, label: 'Início' },
   { href: '/cash-flow', icon: TrendingUp, label: 'Fluxo de Caixa' },
-  { href: '/accounts-receivable', icon: ClipboardList, label: 'A Receber' },
+  { href: '/goals', icon: PiggyBank, label: 'Metas' },
   { href: '/products', icon: Package, label: 'Produtos' },
 ];
 
