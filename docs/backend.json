@@ -35,6 +35,10 @@
           "type": "string",
           "description": "The user's subscription plan type ('personal' or 'entrepreneur')."
         },
+        "initialBalance": {
+          "type": "number",
+          "description": "The user's starting financial balance for cash flow calculations."
+        },
         "createdAt": {
           "type": "string",
           "format": "date-time"

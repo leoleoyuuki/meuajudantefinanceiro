@@ -19,6 +19,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -30,6 +31,7 @@ const profileSchema = z.object({
   whatsapp: z
     .string()
     .min(10, { message: 'Por favor, insira um WhatsApp válido.' }),
+  initialBalance: z.coerce.number().optional(),
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
@@ -43,7 +45,7 @@ export default function CompleteProfilePage() {
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
-    defaultValues: { whatsapp: '' },
+    defaultValues: { whatsapp: '', initialBalance: undefined },
   });
 
   const onSubmit = async (data: ProfileFormValues) => {
@@ -55,18 +57,20 @@ export default function CompleteProfilePage() {
     try {
       await updateDoc(userRef, {
         whatsapp: data.whatsapp,
+        initialBalance: data.initialBalance || 0,
         updatedAt: new Date().toISOString(),
       });
       toast({
         title: 'Perfil atualizado!',
-        description: 'Seu número de WhatsApp foi salvo.',
+        description: 'Suas informações foram salvas.',
       });
       router.push('/');
     } catch (error: any) {
       toast({
         variant: 'destructive',
         title: 'Erro ao atualizar perfil',
-        description: 'Não foi possível salvar seu WhatsApp. Tente novamente.',
+        description:
+          'Não foi possível salvar suas informações. Tente novamente.',
       });
     } finally {
       setIsLoading(false);
@@ -82,7 +86,7 @@ export default function CompleteProfilePage() {
           </div>
           <CardTitle className="font-headline text-2xl">Quase lá!</CardTitle>
           <CardDescription>
-            Por favor, informe seu número de WhatsApp para continuar.
+            Por favor, complete seu perfil para continuar.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -100,6 +104,34 @@ export default function CompleteProfilePage() {
                     <FormControl>
                       <Input placeholder="(11) 99999-9999" {...field} />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="initialBalance"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Saldo Inicial (Opcional)</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-muted-foreground">
+                          R$
+                        </span>
+                        <Input
+                          type="number"
+                          placeholder="0,00"
+                          {...field}
+                          value={field.value ?? ''}
+                          className="pl-10"
+                        />
+                      </div>
+                    </FormControl>
+                    <FormDescription>
+                      Seu ponto de partida para o fluxo de caixa do plano
+                      empreendedor.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

@@ -114,6 +114,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
                 whatsapp: pendingWhatsapp || firebaseUser.phoneNumber || null,
                 role: role,
                 planType: 'personal',
+                initialBalance: 0,
                 createdAt: now,
                 subscriptionStatus: 'inactive',
                 subscriptionExpiresAt: null,

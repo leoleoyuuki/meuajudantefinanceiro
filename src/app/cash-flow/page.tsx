@@ -7,6 +7,7 @@ import type {
   Category,
   MonthlySummary,
   QueryDocumentSnapshot,
+  UserProfile,
 } from '@/lib/types';
 import { cn, formatCurrency } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -25,6 +26,7 @@ import {
   useFirestore,
   useCollection,
   useMemoFirebase,
+  useDoc,
 } from '@/firebase';
 import {
   collection,
@@ -34,6 +36,7 @@ import {
   getDocs,
   limit,
   startAfter,
+  doc,
 } from 'firebase/firestore';
 import { useMemo, useState, useEffect } from 'react';
 import {
@@ -80,7 +83,14 @@ export default function CashFlowPage() {
   const { isBalanceVisible } = usePrivacy();
   const censoredPlaceholder = 'R$ ●●●●●';
   const [searchTerm, setSearchTerm] = useState('');
-  const [initialBalance, setInitialBalance] = useState(0);
+
+  const userProfileQuery = useMemoFirebase(
+    () => (user ? doc(firestore, 'users', user.uid) : null),
+    [firestore, user]
+  );
+  const { data: userProfile, isLoading: profileLoading } =
+    useDoc<UserProfile>(userProfileQuery);
+  const initialBalance = userProfile?.initialBalance ?? 0;
 
   const summariesQuery = useMemoFirebase(
     () =>
@@ -282,7 +292,7 @@ export default function CashFlowPage() {
   }, [enrichedTransactions, searchTerm]);
 
   const groupedTransactions = groupTransactionsByDay(filteredTransactions);
-  const isLoading = summariesLoading || categoriesLoading;
+  const isLoading = summariesLoading || categoriesLoading || profileLoading;
 
   if (isLoading) {
     return (
@@ -334,33 +344,7 @@ export default function CashFlowPage() {
             )}
           </div>
         </CardHeader>
-        <CardContent className="grid gap-6 md:grid-cols-2">
-          <div className="space-y-4">
-            <h3 className="font-semibold text-foreground">Configuração</h3>
-            <div className="space-y-2">
-              <label
-                htmlFor="initial-balance"
-                className="text-sm font-medium text-muted-foreground"
-              >
-                Saldo Inicial do Mês
-              </label>
-              <div className="relative">
-                <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-muted-foreground">
-                  R$
-                </span>
-                <Input
-                  id="initial-balance"
-                  type="number"
-                  placeholder="0,00"
-                  value={initialBalance === 0 ? '' : initialBalance}
-                  onChange={(e) =>
-                    setInitialBalance(Number(e.target.value))
-                  }
-                  className="pl-10 text-lg"
-                />
-              </div>
-            </div>
-          </div>
+        <CardContent>
           <div className="space-y-4 rounded-lg border bg-muted/50 p-4">
             <h3 className="font-semibold text-foreground">
               Balanço do Período
