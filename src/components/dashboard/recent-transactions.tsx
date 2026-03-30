@@ -15,7 +15,13 @@ import Link from 'next/link';
 import { Button } from '../ui/button';
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { MoreVertical, Pencil, Trash, Loader2 } from 'lucide-react';
 import SaleReceipt from '@/components/sales/sale-receipt';
+import { useToast } from '@/hooks/use-toast';
+import { useFirestore, useUser } from '@/firebase';
+import { deleteTransaction } from '@/lib/transaction-actions';
 
 type RecentTransactionsProps = {
   transactions: Transaction[];
@@ -29,10 +35,16 @@ type CartItem = {
 };
 
 export function RecentTransactions({
-  transactions,
+  transactions: initialTransactions,
   isBalanceVisible,
 }: RecentTransactionsProps) {
+    const [transactions, setTransactions] = useState(initialTransactions);
     const [selectedSale, setSelectedSale] = useState<Transaction | null>(null);
+    const [transactionToDelete, setTransactionToDelete] = useState<Transaction | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const { toast } = useToast();
+    const { user } = useUser();
+    const firestore = useFirestore();
 
     const handleTransactionClick = (transaction: Transaction) => {
         if (transaction.items && transaction.items.length > 0) {
@@ -42,6 +54,22 @@ export function RecentTransactions({
 
     const handleDialogClose = () => {
         setSelectedSale(null);
+    };
+
+    const handleDeleteTransaction = async () => {
+        if (!transactionToDelete || !user || !firestore) return;
+        setIsDeleting(true);
+        try {
+            await deleteTransaction(firestore, user.uid, transactionToDelete);
+            setTransactions(prev => prev.filter(t => t.id !== transactionToDelete.id));
+            toast({ title: "Transação excluída com sucesso!" });
+        } catch (error) {
+            console.error("Error deleting transaction: ", error);
+            toast({ variant: 'destructive', title: "Erro ao excluir", description: "Não foi possível remover a transação." });
+        } finally {
+            setTransactionToDelete(null);
+            setIsDeleting(false);
+        }
     };
 
     const receiptItems: CartItem[] | null = selectedSale?.items ? selectedSale.items.map(item => ({
@@ -83,43 +111,63 @@ export function RecentTransactions({
                 return (
                   <div 
                     key={transaction.id} 
-                    className={cn(
-                        "flex items-center gap-4 rounded-lg -m-2 p-2",
-                        isSale && "cursor-pointer transition-colors hover:bg-muted/50"
-                    )}
-                    onClick={() => handleTransactionClick(transaction)}
+                    className="flex items-center gap-2 rounded-lg -m-2 p-2 group"
                   >
-                    <div
-                      className="flex size-10 items-center justify-center rounded-lg"
-                      style={{
-                        backgroundColor: `${color}20`,
-                      }}
+                    <div 
+                      className={cn("flex-1 flex items-center gap-4", isSale && "cursor-pointer")}
+                      onClick={() => handleTransactionClick(transaction)}
                     >
-                      {Icon && <Icon className="size-5" style={{ color }} />}
+                      <div
+                        className="flex size-10 items-center justify-center rounded-lg"
+                        style={{
+                          backgroundColor: `${color}20`,
+                        }}
+                      >
+                        {Icon && <Icon className="size-5" style={{ color }} />}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold">{transaction.description}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {format(new Date(transaction.date), 'dd/MM/yyyy')}
+                        </p>
+                      </div>
+                      <div
+                        className={cn(
+                          'font-bold',
+                          transaction.type === 'income'
+                            ? 'text-primary'
+                            : 'text-destructive'
+                        )}
+                      >
+                        {isBalanceVisible ? (
+                          <>
+                            {transaction.type === 'expense' && '- '}
+                            {formatCurrency(transaction.amount)}
+                          </>
+                        ) : (
+                          'R$ ●●●●●'
+                        )}
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <p className="font-semibold">{transaction.description}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {format(new Date(transaction.date), 'dd/MM/yyyy')}
-                      </p>
-                    </div>
-                    <div
-                      className={cn(
-                        'font-bold',
-                        transaction.type === 'income'
-                          ? 'text-primary'
-                          : 'text-destructive'
-                      )}
-                    >
-                      {isBalanceVisible ? (
-                        <>
-                          {transaction.type === 'expense' && '- '}
-                          {formatCurrency(transaction.amount)}
-                        </>
-                      ) : (
-                        'R$ ●●●●●'
-                      )}
-                    </div>
+                     <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                                <MoreVertical className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            {!isSale && (
+                                <DropdownMenuItem asChild>
+                                    <Link href={`/transactions/edit/${transaction.id}`} className="flex cursor-pointer items-center gap-2">
+                                        <Pencil className="h-4 w-4" /> Editar
+                                    </Link>
+                                </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem onClick={() => setTransactionToDelete(transaction)} className="flex cursor-pointer items-center gap-2 text-destructive focus:text-destructive">
+                                <Trash className="h-4 w-4" /> Excluir
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 );
               })}
@@ -154,6 +202,24 @@ export function RecentTransactions({
               </DialogFooter>
           </DialogContent>
       </Dialog>
+
+       <AlertDialog open={!!transactionToDelete} onOpenChange={(open) => !open && setTransactionToDelete(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Esta ação não pode ser desfeita. Isso excluirá permanentemente a transação.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteTransaction} disabled={isDeleting}>
+                    {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Excluir
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

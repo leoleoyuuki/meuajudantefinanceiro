@@ -33,12 +33,11 @@ import { ptBR } from 'date-fns/locale';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import {
   useUser,
   useFirestore,
   useCollection,
-  setDocumentNonBlocking,
   useMemoFirebase,
 } from '@/firebase';
 import {
@@ -46,7 +45,7 @@ import {
   doc,
   getDoc,
   increment,
-  updateDoc,
+  writeBatch,
 } from 'firebase/firestore';
 import type { Category, Transaction, MonthlySummary } from '@/lib/types';
 
@@ -77,16 +76,19 @@ type TransactionFormValues = z.infer<typeof transactionFormSchema>;
 interface TransactionFormProps {
   initialCategoryId?: string;
   initialType?: 'income' | 'expense';
+  transactionToEdit?: Transaction;
 }
 
 export function TransactionForm({
   initialCategoryId,
   initialType,
+  transactionToEdit,
 }: TransactionFormProps) {
   const { toast } = useToast();
   const router = useRouter();
   const firestore = useFirestore();
   const { user } = useUser();
+  const isEditMode = !!transactionToEdit;
 
   const categoriesQuery = useMemoFirebase(
     () =>
@@ -96,20 +98,24 @@ export function TransactionForm({
   const { data: categories, isLoading: categoriesLoading } =
     useCollection<Category>(categoriesQuery);
 
-  const defaultValues: Partial<TransactionFormValues> = {
-    type: initialType || 'expense',
-    date: new Date(),
-    amount: undefined,
-    description: '',
-    paymentMethod: '',
-    notes: '',
-    categoryId: initialCategoryId || '',
-  };
-
   const form = useForm<TransactionFormValues>({
     resolver: zodResolver(transactionFormSchema),
-    defaultValues,
+    defaultValues: isEditMode ? {} : {
+      type: initialType || 'expense',
+      date: new Date(),
+      categoryId: initialCategoryId || '',
+    },
   });
+
+  useEffect(() => {
+    if (isEditMode && transactionToEdit) {
+      form.reset({
+        ...transactionToEdit,
+        date: new Date(transactionToEdit.date),
+        notes: transactionToEdit.notes || '',
+      });
+    }
+  }, [isEditMode, transactionToEdit, form]);
 
   const transactionType = form.watch('type');
 
@@ -128,104 +134,173 @@ export function TransactionForm({
 
   async function onSubmit(data: TransactionFormValues) {
     if (!user || !firestore) return;
-
-    const collectionRef = collection(
-      firestore,
-      'users',
-      user.uid,
-      'transactions'
-    );
-    const docRef = doc(collectionRef);
-    const docId = docRef.id;
-
-    const transactionData: Omit<Transaction, 'category'> = {
-      ...data,
-      id: docId,
-      userId: user.uid,
-      date: data.date.toISOString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      notes: data.notes || '',
-    };
-
-    setDocumentNonBlocking(docRef, transactionData, {});
+    const batch = writeBatch(firestore);
 
     try {
-      const summaryId = format(data.date, 'yyyy-MM');
-      const summaryRef = doc(
-        firestore,
-        'users',
-        user.uid,
-        'monthlySummaries',
-        summaryId
-      );
-
-      const summarySnap = await getDoc(summaryRef);
-      const amount = data.amount;
-      const netIncrement = data.type === 'income' ? amount : -amount;
-      const fieldToUpdate =
-        data.type === 'income' ? 'totalIncome' : 'totalExpense';
-
-      if (!summarySnap.exists()) {
-        const month = parseInt(format(data.date, 'M'));
-        const year = parseInt(format(data.date, 'yyyy'));
-        const now = new Date().toISOString();
-        const newSummary: MonthlySummary = {
-          id: summaryId,
-          userId: user.uid,
-          month,
-          year,
-          totalIncome: data.type === 'income' ? amount : 0,
-          totalExpense: data.type === 'expense' ? amount : 0,
-          netBalance: netIncrement,
-          spendingByCategory:
-            data.type === 'expense'
-              ? [{ categoryId: data.categoryId, amount: data.amount }]
-              : [],
-          createdAt: now,
-          updatedAt: now,
-        };
-        setDocumentNonBlocking(summaryRef, newSummary, {});
-      } else {
-        const summaryData = summarySnap.data() as MonthlySummary;
-        const updateData: { [key: string]: any } = {
-          [fieldToUpdate]: increment(amount),
-          netBalance: increment(netIncrement),
-          updatedAt: new Date().toISOString(),
-        };
-
-        if (data.type === 'expense') {
-          const newSpendingByCategory = [
-            ...(summaryData.spendingByCategory || []),
-          ];
-          const categoryIndex = newSpendingByCategory.findIndex(
-            (item) => item.categoryId === data.categoryId
-          );
-
-          if (categoryIndex > -1) {
-            newSpendingByCategory[categoryIndex].amount += data.amount;
-          } else {
-            newSpendingByCategory.push({
-              categoryId: data.categoryId,
-              amount: data.amount,
+        if (isEditMode && transactionToEdit) {
+            // --- EDIT LOGIC ---
+            const transactionRef = doc(firestore, 'users', user.uid, 'transactions', transactionToEdit.id);
+            batch.update(transactionRef, {
+                ...data,
+                date: data.date.toISOString(),
+                updatedAt: new Date().toISOString(),
             });
-          }
-          updateData.spendingByCategory = newSpendingByCategory;
+
+            // --- SUMMARY UPDATE LOGIC ---
+            const oldSummaryId = format(new Date(transactionToEdit.date), 'yyyy-MM');
+            const newSummaryId = format(data.date, 'yyyy-MM');
+
+            const oldSummaryRef = doc(firestore, 'users', user.uid, 'monthlySummaries', oldSummaryId);
+            const newSummaryRef = doc(firestore, 'users', user.uid, 'monthlySummaries', newSummaryId);
+
+            if (oldSummaryId === newSummaryId) {
+                // SAME MONTH
+                const incomeChange = (data.type === 'income' ? data.amount : 0) - (transactionToEdit.type === 'income' ? transactionToEdit.amount : 0);
+                const expenseChange = (data.type === 'expense' ? data.amount : 0) - (transactionToEdit.type === 'expense' ? transactionToEdit.amount : 0);
+                
+                const summarySnap = await getDoc(oldSummaryRef);
+                if (summarySnap.exists()) {
+                    const summaryData = summarySnap.data() as MonthlySummary;
+                    let spendingByCategory = [...(summaryData.spendingByCategory || [])];
+                    
+                    if (transactionToEdit.type === 'expense') {
+                        const catIndex = spendingByCategory.findIndex(c => c.categoryId === transactionToEdit.categoryId);
+                        if (catIndex > -1) spendingByCategory[catIndex].amount -= transactionToEdit.amount;
+                    }
+                    if (data.type === 'expense') {
+                        const catIndex = spendingByCategory.findIndex(c => c.categoryId === data.categoryId);
+                        if (catIndex > -1) {
+                            spendingByCategory[catIndex].amount += data.amount;
+                        } else {
+                            spendingByCategory.push({ categoryId: data.categoryId, amount: data.amount });
+                        }
+                    }
+
+                    batch.update(oldSummaryRef, {
+                        totalIncome: increment(incomeChange),
+                        totalExpense: increment(expenseChange),
+                        netBalance: increment(incomeChange - expenseChange),
+                        spendingByCategory: spendingByCategory.filter(c => c.amount > 0.001),
+                        updatedAt: new Date().toISOString(),
+                    });
+                }
+            } else {
+                // DIFFERENT MONTHS
+                // Revert from old summary
+                const oldSummarySnap = await getDoc(oldSummaryRef);
+                if (oldSummarySnap.exists()) {
+                    const oldSummaryData = oldSummarySnap.data() as MonthlySummary;
+                    let spendingByCategory = [...(oldSummaryData.spendingByCategory || [])];
+                    if (transactionToEdit.type === 'expense') {
+                        const catIndex = spendingByCategory.findIndex(c => c.categoryId === transactionToEdit.categoryId);
+                        if (catIndex > -1) spendingByCategory[catIndex].amount -= transactionToEdit.amount;
+                    }
+                    batch.update(oldSummaryRef, {
+                        totalIncome: increment(transactionToEdit.type === 'income' ? -transactionToEdit.amount : 0),
+                        totalExpense: increment(transactionToEdit.type === 'expense' ? -transactionToEdit.amount : 0),
+                        netBalance: increment(-(transactionToEdit.type === 'income' ? transactionToEdit.amount : -transactionToEdit.amount)),
+                        spendingByCategory: spendingByCategory.filter(c => c.amount > 0.001),
+                        updatedAt: new Date().toISOString(),
+                    });
+                }
+
+                // Apply to new summary
+                const newSummarySnap = await getDoc(newSummaryRef);
+                if (newSummarySnap.exists()) {
+                    const newSummaryData = newSummarySnap.data() as MonthlySummary;
+                    let spendingByCategory = [...(newSummaryData.spendingByCategory || [])];
+                    if (data.type === 'expense') {
+                         const catIndex = spendingByCategory.findIndex(c => c.categoryId === data.categoryId);
+                        if(catIndex > -1) spendingByCategory[catIndex].amount += data.amount;
+                        else spendingByCategory.push({ categoryId: data.categoryId, amount: data.amount });
+                    }
+                    batch.update(newSummaryRef, {
+                        totalIncome: increment(data.type === 'income' ? data.amount : 0),
+                        totalExpense: increment(data.type === 'expense' ? data.amount : 0),
+                        netBalance: increment(data.type === 'income' ? data.amount : -data.amount),
+                        spendingByCategory: spendingByCategory,
+                        updatedAt: new Date().toISOString(),
+                    });
+                } else {
+                    batch.set(newSummaryRef, {
+                        id: newSummaryId,
+                        userId: user.uid,
+                        month: data.date.getMonth() + 1,
+                        year: data.date.getFullYear(),
+                        totalIncome: data.type === 'income' ? data.amount : 0,
+                        totalExpense: data.type === 'expense' ? data.amount : 0,
+                        netBalance: data.type === 'income' ? data.amount : -data.amount,
+                        spendingByCategory: data.type === 'expense' ? [{ categoryId: data.categoryId, amount: data.amount }] : [],
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString(),
+                    });
+                }
+            }
+
+        } else {
+            // --- CREATE LOGIC ---
+            const transactionRef = doc(collection(firestore, 'users', user.uid, 'transactions'));
+            const transactionData: Omit<Transaction, 'category'> = {
+              ...data,
+              id: transactionRef.id,
+              userId: user.uid,
+              date: data.date.toISOString(),
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              notes: data.notes || '',
+            };
+            batch.set(transactionRef, transactionData);
+
+            const summaryId = format(data.date, 'yyyy-MM');
+            const summaryRef = doc(firestore, 'users', user.uid, 'monthlySummaries', summaryId);
+            const summarySnap = await getDoc(summaryRef);
+
+            if (summarySnap.exists()) {
+                const summaryData = summarySnap.data() as MonthlySummary;
+                let spendingByCategory = [...(summaryData.spendingByCategory || [])];
+                 if (data.type === 'expense') {
+                    const catIndex = spendingByCategory.findIndex(c => c.categoryId === data.categoryId);
+                    if(catIndex > -1) spendingByCategory[catIndex].amount += data.amount;
+                    else spendingByCategory.push({ categoryId: data.categoryId, amount: data.amount });
+                }
+                batch.update(summaryRef, {
+                    totalIncome: increment(data.type === 'income' ? data.amount : 0),
+                    totalExpense: increment(data.type === 'expense' ? data.amount : 0),
+                    netBalance: increment(data.type === 'income' ? data.amount : -data.amount),
+                    spendingByCategory: spendingByCategory,
+                    updatedAt: new Date().toISOString(),
+                });
+            } else {
+                 batch.set(summaryRef, {
+                    id: summaryId,
+                    userId: user.uid,
+                    month: data.date.getMonth() + 1,
+                    year: data.date.getFullYear(),
+                    totalIncome: data.type === 'income' ? data.amount : 0,
+                    totalExpense: data.type === 'expense' ? data.amount : 0,
+                    netBalance: data.type === 'income' ? data.amount : -data.amount,
+                    spendingByCategory: data.type === 'expense' ? [{ categoryId: data.categoryId, amount: data.amount }] : [],
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                });
+            }
         }
 
-        updateDoc(summaryRef, updateData);
-      }
-    } catch (error) {
-      console.error('Failed to update monthly summary:', error);
-    }
+        await batch.commit();
 
-    toast({
-      title: 'Transação salva!',
-      description: `Sua ${
-        data.type === 'income' ? 'receita' : 'despesa'
-      } foi registrada.`,
-    });
-    router.push('/');
+        toast({
+            title: isEditMode ? 'Transação atualizada!' : 'Transação salva!',
+        });
+        router.push('/transactions');
+
+    } catch (error) {
+        console.error("Error saving transaction:", error);
+        toast({
+            variant: 'destructive',
+            title: 'Erro ao salvar',
+            description: 'Não foi possível salvar a transação.'
+        });
+    }
   }
 
   return (
@@ -445,7 +520,7 @@ export function TransactionForm({
           {form.formState.isSubmitting ? (
             <Loader2 className="animate-spin" />
           ) : (
-            'Salvar Transação'
+            isEditMode ? 'Salvar Alterações' : 'Salvar Transação'
           )}
         </Button>
       </form>

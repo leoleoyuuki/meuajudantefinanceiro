@@ -21,6 +21,8 @@ import {
   Scale,
   PlusCircle,
   Pencil,
+  MoreVertical,
+  Trash,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
@@ -66,8 +68,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import SaleReceipt from '@/components/sales/sale-receipt';
+import { deleteTransaction } from '@/lib/transaction-actions';
 
 // This type is used inside SaleReceipt
 type CartItem = {
@@ -110,6 +124,8 @@ export default function CashFlowPage() {
   const [isSettingBalance, setIsSettingBalance] = useState(false);
   
   const [selectedSale, setSelectedSale] = useState<Transaction | null>(null);
+  const [transactionToDelete, setTransactionToDelete] = useState<Transaction | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const userProfileQuery = useMemoFirebase(
     () => (user ? doc(firestore, 'users', user.uid) : null),
@@ -321,6 +337,28 @@ export default function CashFlowPage() {
   const handleDialogClose = () => {
       setSelectedSale(null);
   };
+  
+    const handleDeleteTransaction = async () => {
+        if (!transactionToDelete || !user || !firestore) return;
+        setIsDeleting(true);
+        try {
+            await deleteTransaction(firestore, user.uid, transactionToDelete);
+            setTransactions(prev => prev.filter(t => t.id !== transactionToDelete.id));
+            // Invalidate cache for the current month
+            setTransactionsCache(prev => {
+                const newCache = { ...prev };
+                delete newCache[selectedMonth];
+                return newCache;
+            });
+            toast({ title: "Transação excluída com sucesso!" });
+        } catch (error) {
+            console.error("Error deleting transaction: ", error);
+            toast({ variant: 'destructive', title: "Erro ao excluir", description: "Não foi possível remover a transação." });
+        } finally {
+            setTransactionToDelete(null);
+            setIsDeleting(false);
+        }
+    };
   
   const receiptItems: CartItem[] | null = selectedSale?.items ? selectedSale.items.map(item => ({
       quantity: item.quantity,
@@ -539,52 +577,71 @@ export default function CashFlowPage() {
                       return (
                         <div
                           key={transaction.id}
-                          className={cn(
-                            "flex items-center justify-between rounded-lg bg-card p-3 shadow-sm",
-                            isSale && "cursor-pointer transition-colors hover:bg-muted/50"
-                          )}
-                          onClick={() => handleTransactionClick(transaction)}
+                          className="flex items-center gap-2 rounded-lg bg-card p-3 shadow-sm"
                         >
-                          <div className="flex items-center gap-3">
-                            <div
-                              className="flex size-10 items-center justify-center rounded-lg"
-                              style={{
-                                backgroundColor: `${color}20`,
-                              }}
-                            >
-                              {Icon && (
-                                <Icon
-                                  className="size-5"
-                                  style={{ color: color }}
-                                />
-                              )}
-                            </div>
-                            <div className="flex flex-col">
-                              <span className="font-medium">
-                                {transaction.description}
-                              </span>
-                              <span className="text-xs text-muted-foreground">
-                                {transaction.category?.name}
-                              </span>
+                           <div className="flex-1" onClick={() => isSale && handleTransactionClick(transaction)}>
+                            <div className={cn("flex items-center justify-between", isSale && "cursor-pointer")}>
+                                <div className="flex items-center gap-3">
+                                <div
+                                    className="flex size-10 items-center justify-center rounded-lg"
+                                    style={{
+                                    backgroundColor: `${color}20`,
+                                    }}
+                                >
+                                    {Icon && (
+                                    <Icon
+                                        className="size-5"
+                                        style={{ color: color }}
+                                    />
+                                    )}
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="font-medium">
+                                    {transaction.description}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">
+                                    {transaction.category?.name}
+                                    </span>
+                                </div>
+                                </div>
+                                <span
+                                className={cn(
+                                    'font-bold',
+                                    transaction.type === 'income'
+                                    ? 'text-primary'
+                                    : 'text-destructive'
+                                )}
+                                >
+                                {isBalanceVisible ? (
+                                    <>
+                                    {transaction.type === 'expense' && '- '}
+                                    {formatCurrency(transaction.amount)}
+                                    </>
+                                ) : (
+                                    censoredPlaceholder
+                                )}
+                                </span>
                             </div>
                           </div>
-                          <span
-                            className={cn(
-                              'font-bold',
-                              transaction.type === 'income'
-                                ? 'text-primary'
-                                : 'text-destructive'
-                            )}
-                          >
-                            {isBalanceVisible ? (
-                              <>
-                                {transaction.type === 'expense' && '- '}
-                                {formatCurrency(transaction.amount)}
-                              </>
-                            ) : (
-                              censoredPlaceholder
-                            )}
-                          </span>
+                           <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                                        <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    {!isSale && (
+                                        <DropdownMenuItem asChild>
+                                            <Link href={`/transactions/edit/${transaction.id}`} className="flex cursor-pointer items-center gap-2">
+                                                <Pencil className="h-4 w-4" /> Editar
+                                            </Link>
+                                        </DropdownMenuItem>
+                                    )}
+                                    <DropdownMenuItem onClick={() => setTransactionToDelete(transaction)} className="flex cursor-pointer items-center gap-2 text-destructive focus:text-destructive">
+                                        <Trash className="h-4 w-4" /> Excluir
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </div>
                       );
                     })}
@@ -667,6 +724,24 @@ export default function CashFlowPage() {
               </DialogFooter>
           </DialogContent>
       </Dialog>
+      
+       <AlertDialog open={!!transactionToDelete} onOpenChange={(open) => !open && setTransactionToDelete(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Esta ação não pode ser desfeita. Isso excluirá permanentemente a transação.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteTransaction} disabled={isDeleting}>
+                    {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Excluir
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

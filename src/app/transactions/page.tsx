@@ -17,6 +17,9 @@ import {
   Lightbulb,
   CheckCircle2,
   AlertCircle,
+  MoreVertical,
+  Pencil,
+  Trash,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
@@ -64,8 +67,23 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { usePrivacy } from '@/context/privacy-provider';
+import Link from 'next/link';
+import { useToast } from '@/hooks/use-toast';
+import { deleteTransaction } from '@/lib/transaction-actions';
+
 
 // Based on common financial advice (50/30/20 rule adjusted)
 const idealPercentages: { [key: string]: number } = {
@@ -127,8 +145,12 @@ export default function TransactionsPage() {
   const firestore = useFirestore();
   const { user } = useUser();
   const { isBalanceVisible } = usePrivacy();
+  const { toast } = useToast();
   const censoredPlaceholder = 'R$ ●●●●●';
   const [searchTerm, setSearchTerm] = useState('');
+  
+  const [transactionToDelete, setTransactionToDelete] = useState<Transaction | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const summariesQuery = useMemoFirebase(
     () =>
@@ -284,6 +306,28 @@ export default function TransactionsPage() {
       console.error('Error fetching more transactions: ', error);
     } finally {
       setLoadingMore(false);
+    }
+  };
+  
+  const handleDeleteTransaction = async () => {
+    if (!transactionToDelete || !user || !firestore) return;
+    setIsDeleting(true);
+    try {
+        await deleteTransaction(firestore, user.uid, transactionToDelete);
+        setTransactions(prev => prev.filter(t => t.id !== transactionToDelete.id));
+        // Invalidate cache for the current month
+        setTransactionsCache(prev => {
+            const newCache = { ...prev };
+            delete newCache[selectedMonth];
+            return newCache;
+        });
+        toast({ title: "Transação excluída com sucesso!" });
+    } catch (error) {
+        console.error("Error deleting transaction: ", error);
+        toast({ variant: 'destructive', title: "Erro ao excluir", description: "Não foi possível remover a transação." });
+    } finally {
+        setTransactionToDelete(null);
+        setIsDeleting(false);
     }
   };
 
@@ -605,51 +649,75 @@ export default function TransactionsPage() {
                         transaction.category &&
                         iconMap[transaction.category.icon];
                       const color = transaction.category?.color || '#888';
+                      const isSale = transaction.items && transaction.items.length > 0;
                       return (
                         <div
                           key={transaction.id}
-                          className="flex items-center justify-between rounded-lg bg-card p-3 shadow-sm"
+                          className="flex items-center gap-2 rounded-lg bg-card p-3 shadow-sm"
                         >
-                          <div className="flex items-center gap-3">
-                            <div
-                              className="flex size-10 items-center justify-center rounded-lg"
-                              style={{
-                                backgroundColor: `${color}20`,
-                              }}
-                            >
-                              {Icon && (
-                                <Icon
-                                  className="size-5"
-                                  style={{ color: color }}
-                                />
-                              )}
-                            </div>
-                            <div className="flex flex-col">
-                              <span className="font-medium">
-                                {transaction.description}
-                              </span>
-                              <span className="text-xs text-muted-foreground">
-                                {transaction.category?.name}
-                              </span>
+                          <div className='flex-1'>
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                <div
+                                    className="flex size-10 items-center justify-center rounded-lg"
+                                    style={{
+                                    backgroundColor: `${color}20`,
+                                    }}
+                                >
+                                    {Icon && (
+                                    <Icon
+                                        className="size-5"
+                                        style={{ color: color }}
+                                    />
+                                    )}
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="font-medium">
+                                    {transaction.description}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">
+                                    {transaction.category?.name}
+                                    </span>
+                                </div>
+                                </div>
+                                <span
+                                className={cn(
+                                    'font-bold',
+                                    transaction.type === 'income'
+                                    ? 'text-primary'
+                                    : 'text-destructive'
+                                )}
+                                >
+                                {isBalanceVisible ? (
+                                    <>
+                                    {transaction.type === 'expense' && '- '}
+                                    {formatCurrency(transaction.amount)}
+                                    </>
+                                ) : (
+                                    censoredPlaceholder
+                                )}
+                                </span>
                             </div>
                           </div>
-                          <span
-                            className={cn(
-                              'font-bold',
-                              transaction.type === 'income'
-                                ? 'text-primary'
-                                : 'text-destructive'
-                            )}
-                          >
-                             {isBalanceVisible ? (
-                              <>
-                                {transaction.type === 'expense' && '- '}
-                                {formatCurrency(transaction.amount)}
-                              </>
-                            ) : (
-                              censoredPlaceholder
-                            )}
-                          </span>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                                        <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    {!isSale && (
+                                        <DropdownMenuItem asChild>
+                                            <Link href={`/transactions/edit/${transaction.id}`} className="flex cursor-pointer items-center gap-2">
+                                                <Pencil className="h-4 w-4" /> Editar
+                                            </Link>
+                                        </DropdownMenuItem>
+                                    )}
+                                    <DropdownMenuItem onClick={() => setTransactionToDelete(transaction)} className="flex cursor-pointer items-center gap-2 text-destructive focus:text-destructive">
+                                        <Trash className="h-4 w-4" /> Excluir
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </div>
                       );
                     })}
@@ -671,6 +739,24 @@ export default function TransactionsPage() {
           </div>
         )}
       </div>
+
+       <AlertDialog open={!!transactionToDelete} onOpenChange={(open) => !open && setTransactionToDelete(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Esta ação não pode ser desfeita. Isso excluirá permanentemente a transação.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteTransaction} disabled={isDeleting}>
+                    {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Excluir
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
