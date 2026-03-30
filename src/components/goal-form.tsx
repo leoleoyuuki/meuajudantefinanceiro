@@ -34,7 +34,10 @@ import {
   increment,
   setDoc,
   updateDoc,
+  writeBatch
 } from 'firebase/firestore';
+import { FinancialGoal } from '@/lib/types';
+import { useEffect } from 'react';
 
 const goalFormSchema = z.object({
   name: z.string().min(2, {
@@ -49,11 +52,16 @@ const goalFormSchema = z.object({
 
 type GoalFormValues = z.infer<typeof goalFormSchema>;
 
-export function GoalForm() {
+type GoalFormProps = {
+    goalToEdit?: FinancialGoal;
+}
+
+export function GoalForm({ goalToEdit }: GoalFormProps) {
   const { toast } = useToast();
   const router = useRouter();
   const firestore = useFirestore();
   const { user } = useUser();
+  const isEditMode = !!goalToEdit;
 
   const form = useForm<GoalFormValues>({
     resolver: zodResolver(goalFormSchema),
@@ -62,71 +70,107 @@ export function GoalForm() {
       description: '',
     },
   });
+  
+  useEffect(() => {
+    if (goalToEdit) {
+      form.reset({
+        name: goalToEdit.name,
+        targetAmount: goalToEdit.targetAmount,
+        description: goalToEdit.description || '',
+        targetDate: goalToEdit.targetDate ? new Date(goalToEdit.targetDate) : undefined,
+      });
+    }
+  }, [goalToEdit, form]);
 
   async function onSubmit(data: GoalFormValues) {
     if (!user || !firestore) return;
-
-    const collectionRef = collection(
-      firestore,
-      'users',
-      user.uid,
-      'financialGoals'
-    );
-    const docRef = doc(collectionRef);
-    const docId = docRef.id;
+    
+    const batch = writeBatch(firestore);
     const now = new Date();
 
-    const goalData = {
-      id: docId,
-      userId: user.uid,
-      name: data.name,
-      targetAmount: data.targetAmount,
-      currentAmount: 0,
-      startDate: now.toISOString(),
-      createdAt: now.toISOString(),
-      updatedAt: now.toISOString(),
-      ...(data.description && { description: data.description }),
-      ...(data.targetDate && { targetDate: data.targetDate.toISOString() }),
-    };
-
-    setDocumentNonBlocking(docRef, goalData, {});
-
-    try {
-      const summaryRef = doc(
-        firestore,
-        'users',
-        user.uid,
-        'goalsSummaries',
-        'summary'
-      );
-      const summarySnap = await getDoc(summaryRef);
-      const nowStr = now.toISOString();
-
-      if (summarySnap.exists()) {
-        await updateDoc(summaryRef, {
-          totalTargetAmount: increment(data.targetAmount),
-          goalsCount: increment(1),
-          updatedAt: nowStr,
+    if (isEditMode) {
+        // Edit logic
+        const goalRef = doc(firestore, 'users', user.uid, 'financialGoals', goalToEdit.id);
+        const amountDifference = data.targetAmount - goalToEdit.targetAmount;
+        
+        batch.update(goalRef, {
+            name: data.name,
+            targetAmount: data.targetAmount,
+            description: data.description || '',
+            targetDate: data.targetDate ? data.targetDate.toISOString() : null,
+            updatedAt: now.toISOString(),
         });
-      } else {
-        await setDoc(summaryRef, {
-          id: 'summary',
+        
+        const summaryRef = doc(firestore, 'users', user.uid, 'goalsSummaries', 'summary');
+        batch.update(summaryRef, {
+            totalTargetAmount: increment(amountDifference),
+            updatedAt: now.toISOString(),
+        });
+
+        try {
+            await batch.commit();
+            toast({
+              title: 'Meta atualizada!',
+              description: `Sua meta "${data.name}" foi alterada com sucesso.`,
+            });
+            router.push('/goals');
+        } catch(error) {
+            console.error("Error updating goal:", error);
+            toast({ variant: "destructive", title: "Erro", description: "Não foi possível atualizar a meta."});
+        }
+
+    } else {
+        // Create logic
+        const collectionRef = collection(firestore, 'users', user.uid, 'financialGoals');
+        const docRef = doc(collectionRef);
+        const docId = docRef.id;
+
+        const goalData = {
+          id: docId,
           userId: user.uid,
-          totalTargetAmount: data.targetAmount,
-          totalCurrentAmount: 0,
-          goalsCount: 1,
-          updatedAt: nowStr,
-        });
-      }
-    } catch (error) {
-      console.error('Failed to update goals summary:', error);
-    }
+          name: data.name,
+          targetAmount: data.targetAmount,
+          currentAmount: 0,
+          startDate: now.toISOString(),
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+          ...(data.description && { description: data.description }),
+          ...(data.targetDate && { targetDate: data.targetDate.toISOString() }),
+        };
 
-    toast({
-      title: 'Meta salva!',
-      description: `Sua meta "${data.name}" foi criada com sucesso.`,
-    });
-    router.push('/goals');
+        batch.set(docRef, goalData);
+
+        const summaryRef = doc(firestore, 'users', user.uid, 'goalsSummaries', 'summary');
+        
+        try {
+            const summarySnap = await getDoc(summaryRef);
+            if (summarySnap.exists()) {
+              batch.update(summaryRef, {
+                totalTargetAmount: increment(data.targetAmount),
+                goalsCount: increment(1),
+                updatedAt: now.toISOString(),
+              });
+            } else {
+              batch.set(summaryRef, {
+                id: 'summary',
+                userId: user.uid,
+                totalTargetAmount: data.targetAmount,
+                totalCurrentAmount: 0,
+                goalsCount: 1,
+                updatedAt: now.toISOString(),
+              });
+            }
+            await batch.commit();
+            toast({
+              title: 'Meta salva!',
+              description: `Sua meta "${data.name}" foi criada com sucesso.`,
+            });
+            router.push('/goals');
+        } catch (error) {
+            console.error('Failed to create goal and update summary:', error);
+            toast({ variant: "destructive", title: "Erro", description: "Não foi possível criar a meta."});
+        }
+    }
   }
 
   return (
@@ -142,7 +186,6 @@ export function GoalForm() {
                 <Input
                   placeholder="Ex: Viagem para a praia, Carro novo"
                   {...field}
-                  value={field.value ?? ''}
                 />
               </FormControl>
               <FormMessage />
@@ -165,7 +208,6 @@ export function GoalForm() {
                     type="number"
                     placeholder="0,00"
                     {...field}
-                    value={field.value ?? ''}
                     className="pl-10 text-lg"
                   />
                 </div>
@@ -226,7 +268,6 @@ export function GoalForm() {
                   placeholder="Algum detalhe sobre sua meta?"
                   className="resize-none"
                   {...field}
-                  value={field.value ?? ''}
                 />
               </FormControl>
               <FormMessage />
@@ -243,7 +284,7 @@ export function GoalForm() {
           {form.formState.isSubmitting ? (
             <Loader2 className="animate-spin" />
           ) : (
-            'Salvar Meta'
+            isEditMode ? 'Salvar Alterações' : 'Salvar Meta'
           )}
         </Button>
       </form>

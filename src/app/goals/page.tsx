@@ -27,7 +27,7 @@ import type {
   Category,
   Transaction,
 } from '@/lib/types';
-import { Loader2, PlusCircle, Target } from 'lucide-react';
+import { Loader2, PlusCircle, Target, MoreVertical, Pencil, Trash } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
@@ -39,9 +39,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { usePrivacy } from '@/context/privacy-provider';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 export default function GoalsPage() {
   const firestore = useFirestore();
@@ -55,8 +66,10 @@ export default function GoalsPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   const [selectedGoal, setSelectedGoal] = useState<FinancialGoal | null>(null);
+  const [goalToDelete, setGoalToDelete] = useState<FinancialGoal | null>(null);
   const [amountToAdd, setAmountToAdd] = useState('');
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isAddAmountDialogOpen, setIsAddAmountDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (!user || !firestore) {
@@ -276,17 +289,57 @@ export default function GoalsPage() {
       description: `${isBalanceVisible ? formatCurrency(numericAmount) : censoredPlaceholder} adicionado à meta "${selectedGoal.name}".`,
     });
 
-    setIsDialogOpen(false);
+    setIsAddAmountDialogOpen(false);
     setAmountToAdd('');
     setSelectedGoal(null);
   };
 
-  const handleDialogChange = (open: boolean) => {
+  const handleDeleteGoal = async () => {
+    if (!goalToDelete || !user || !firestore) return;
+    setIsDeleting(true);
+
+    const { id, targetAmount, currentAmount } = goalToDelete;
+
+    const batch = writeBatch(firestore);
+
+    // 1. Delete the goal doc
+    const goalRef = doc(firestore, 'users', user.uid, 'financialGoals', id);
+    batch.delete(goalRef);
+
+    // 2. Update the summary doc
+    const summaryRef = doc(firestore, 'users', user.uid, 'goalsSummaries', 'summary');
+    batch.update(summaryRef, {
+      goalsCount: increment(-1),
+      totalTargetAmount: increment(-targetAmount),
+      totalCurrentAmount: increment(-currentAmount),
+    });
+    
+    try {
+        await batch.commit();
+        setGoals(prevGoals => prevGoals?.filter(g => g.id !== id) || null);
+        toast({
+            title: "Meta excluída!",
+            description: `A meta "${goalToDelete.name}" foi removida.`
+        });
+    } catch (error) {
+        console.error("Error deleting goal:", error);
+        toast({
+            variant: "destructive",
+            title: "Erro ao excluir",
+            description: "Não foi possível remover a meta."
+        });
+    } finally {
+        setIsDeleting(false);
+        setGoalToDelete(null);
+    }
+  }
+
+  const handleAddDialogChange = (open: boolean) => {
     if (!open) {
       setAmountToAdd('');
       setSelectedGoal(null);
     }
-    setIsDialogOpen(open);
+    setIsAddAmountDialogOpen(open);
   };
 
   if (isLoading) {
@@ -314,8 +367,25 @@ export default function GoalsPage() {
             const progress = (goal.currentAmount / goal.targetAmount) * 100;
             return (
               <Card key={goal.id}>
-                <CardHeader>
+                <CardHeader className="flex flex-row items-start justify-between">
                   <CardTitle>{goal.name}</CardTitle>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreVertical className="h-4 w-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuItem asChild>
+                            <Link href={`/goals/edit/${goal.id}`} className="flex items-center gap-2 cursor-pointer">
+                                <Pencil className="h-4 w-4" /> Editar
+                            </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setGoalToDelete(goal)} className="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive">
+                            <Trash className="h-4 w-4" /> Excluir
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex justify-between text-sm">
@@ -336,7 +406,7 @@ export default function GoalsPage() {
                       className="w-full"
                       onClick={() => {
                         setSelectedGoal(goal);
-                        setIsDialogOpen(true);
+                        setIsAddAmountDialogOpen(true);
                       }}
                       disabled={goal.currentAmount >= goal.targetAmount}
                     >
@@ -375,7 +445,7 @@ export default function GoalsPage() {
         </div>
       )}
 
-      <Dialog open={isDialogOpen} onOpenChange={handleDialogChange}>
+      <Dialog open={isAddAmountDialogOpen} onOpenChange={handleAddDialogChange}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
@@ -407,6 +477,25 @@ export default function GoalsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      <AlertDialog open={!!goalToDelete} onOpenChange={(open) => !open && setGoalToDelete(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Esta ação não pode ser desfeita. Isso excluirá permanentemente a meta "{goalToDelete?.name}".
+                    Os valores já investidos não serão estornados.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteGoal} disabled={isDeleting}>
+                    {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Excluir
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
