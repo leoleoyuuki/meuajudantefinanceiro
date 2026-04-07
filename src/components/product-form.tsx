@@ -108,7 +108,6 @@ export function ProductForm({ productToEdit }: ProductFormProps) {
         });
       }
       router.push('/products');
-      router.refresh();
     } catch (error) {
        console.error("Error saving product: ", error);
        toast({
