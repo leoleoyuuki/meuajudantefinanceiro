@@ -4,23 +4,68 @@ import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { collection, doc, deleteDoc } from 'firebase/firestore';
 import type { Product } from '@/lib/types';
 import { formatCurrency } from '@/lib/utils';
-import { Loader2, Package, PlusCircle } from 'lucide-react';
+import { Loader2, Package, PlusCircle, MoreVertical, Pencil, Trash } from 'lucide-react';
 import Link from 'next/link';
+import { useState } from 'react';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { useToast } from '@/hooks/use-toast';
 
 export default function ProductsPage() {
   const firestore = useFirestore();
   const { user } = useUser();
+  const { toast } = useToast();
+  
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
 
   const productsQuery = useMemoFirebase(
     () => (user ? collection(firestore, 'users', user.uid, 'products') : null),
     [firestore, user]
   );
+
   const { data: products, isLoading } = useCollection<Product>(productsQuery);
 
+  const handleDeleteProduct = async () => {
+    if (!productToDelete || !user || !firestore) return;
+    setIsDeleting(true);
+
+    try {
+        const productRef = doc(firestore, 'users', user.uid, 'products', productToDelete.id);
+        await deleteDoc(productRef);
+        toast({
+            title: "Produto excluído!",
+            description: `O produto "${productToDelete.name}" foi removido.`
+        });
+    } catch (error) {
+        console.error("Error deleting product:", error);
+        toast({
+            variant: "destructive",
+            title: "Erro ao excluir",
+            description: "Não foi possível remover o produto."
+        });
+    } finally {
+        setIsDeleting(false);
+        setProductToDelete(null);
+    }
+  }
+
+
   return (
+    <>
     <div className="flex flex-col gap-6">
       <PageHeader title="Produtos">
         <Button asChild>
@@ -50,11 +95,30 @@ export default function ProductsPage() {
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {products.map((product) => (
             <Card key={product.id}>
-              <CardHeader>
-                <CardTitle>{product.name}</CardTitle>
-                {product.description && (
-                  <CardDescription>{product.description}</CardDescription>
-                )}
+              <CardHeader className="flex flex-row items-start justify-between">
+                <div>
+                  <CardTitle>{product.name}</CardTitle>
+                  {product.description && (
+                    <CardDescription>{product.description}</CardDescription>
+                  )}
+                </div>
+                 <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                            <MoreVertical className="h-4 w-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuItem asChild>
+                            <Link href={`/products/edit/${product.id}`} className="flex cursor-pointer items-center gap-2">
+                                <Pencil className="h-4 w-4" /> Editar
+                            </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setProductToDelete(product)} className="flex cursor-pointer items-center gap-2 text-destructive focus:text-destructive">
+                            <Trash className="h-4 w-4" /> Excluir
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex justify-between rounded-lg border bg-muted/30 p-3 text-sm">
@@ -96,7 +160,24 @@ export default function ProductsPage() {
         </div>
       )}
     </div>
+
+    <AlertDialog open={!!productToDelete} onOpenChange={(open) => !open && setProductToDelete(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Esta ação não pode ser desfeita. Isso excluirá permanentemente o produto "{productToDelete?.name}".
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteProduct} disabled={isDeleting}>
+                    {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Excluir
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
-
-    

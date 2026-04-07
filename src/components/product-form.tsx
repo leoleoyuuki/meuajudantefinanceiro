@@ -16,10 +16,12 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { useUser, useFirestore, setDocumentNonBlocking } from '@/firebase';
-import { collection, doc } from 'firebase/firestore';
+import { useUser, useFirestore } from '@/firebase';
+import { collection, doc, setDoc, updateDoc } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { useEffect } from 'react';
+import { Product } from '@/lib/types';
 
 const productFormSchema = z.object({
   name: z.string().min(2, {
@@ -37,29 +39,44 @@ const productFormSchema = z.object({
 
 type ProductFormValues = z.infer<typeof productFormSchema>;
 
-export function ProductForm() {
+type ProductFormProps = {
+  productToEdit?: Product;
+};
+
+export function ProductForm({ productToEdit }: ProductFormProps) {
   const { toast } = useToast();
   const router = useRouter();
   const firestore = useFirestore();
   const { user } = useUser();
+  const isEditMode = !!productToEdit;
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
-    defaultValues: {
-      name: '',
-      description: '',
-      pricingModel: 'unit',
-    },
+    defaultValues: isEditMode
+      ? {}
+      : {
+          name: '',
+          description: '',
+          pricingModel: 'unit',
+        },
   });
+
+  useEffect(() => {
+    if (isEditMode && productToEdit) {
+      form.reset({
+        name: productToEdit.name,
+        description: productToEdit.description || '',
+        pricingModel: productToEdit.pricingModel,
+        costPrice: productToEdit.costPrice,
+        salePrice: productToEdit.salePrice,
+      });
+    }
+  }, [isEditMode, productToEdit, form]);
 
   const pricingModel = form.watch('pricingModel');
 
   async function onSubmit(data: ProductFormValues) {
     if (!user || !firestore) return;
-
-    const collectionRef = collection(firestore, 'users', user.uid, 'products');
-    const docRef = doc(collectionRef);
-    const docId = docRef.id;
 
     const profitMargin =
       data.salePrice > 0
@@ -67,23 +84,39 @@ export function ProductForm() {
         : 0;
 
     const productData = {
-      id: docId,
+      ...data,
       userId: user.uid,
-      name: data.name,
-      description: data.description || '',
-      pricingModel: data.pricingModel,
-      costPrice: data.costPrice,
-      salePrice: data.salePrice,
       profitMargin: profitMargin,
+      description: data.description || '',
     };
-
-    setDocumentNonBlocking(docRef, productData, {});
-
-    toast({
-      title: 'Produto salvo!',
-      description: `O produto "${data.name}" foi adicionado com sucesso.`,
-    });
-    router.push('/products');
+    
+    try {
+      if (isEditMode && productToEdit) {
+        const docRef = doc(firestore, 'users', user.uid, 'products', productToEdit.id);
+        await updateDoc(docRef, productData);
+        toast({
+          title: 'Produto atualizado!',
+          description: `O produto "${data.name}" foi salvo.`,
+        });
+      } else {
+        const collectionRef = collection(firestore, 'users', user.uid, 'products');
+        const docRef = doc(collectionRef);
+        await setDoc(docRef, { ...productData, id: docRef.id });
+        toast({
+          title: 'Produto salvo!',
+          description: `O produto "${data.name}" foi adicionado com sucesso.`,
+        });
+      }
+      router.push('/products');
+      router.refresh();
+    } catch (error) {
+       console.error("Error saving product: ", error);
+       toast({
+           variant: 'destructive',
+           title: "Erro ao salvar",
+           description: "Não foi possível salvar o produto.",
+       })
+    }
   }
 
   return (
@@ -114,6 +147,7 @@ export function ProductForm() {
                   placeholder="Detalhes do produto, ingredientes, etc."
                   className="resize-none"
                   {...field}
+                  value={field.value ?? ''}
                 />
               </FormControl>
               <FormMessage />
@@ -183,6 +217,7 @@ export function ProductForm() {
                       placeholder="0,00"
                       step="0.01"
                       {...field}
+                      value={field.value ?? ''}
                       className="pl-10"
                     />
                   </div>
@@ -211,6 +246,7 @@ export function ProductForm() {
                       placeholder="0,00"
                       step="0.01"
                       {...field}
+                      value={field.value ?? ''}
                       className="pl-10"
                     />
                   </div>
@@ -230,12 +266,10 @@ export function ProductForm() {
           {form.formState.isSubmitting ? (
             <Loader2 className="animate-spin" />
           ) : (
-            'Salvar Produto'
+            isEditMode ? 'Salvar Alterações' : 'Salvar Produto'
           )}
         </Button>
       </form>
     </Form>
   );
 }
-
-    
