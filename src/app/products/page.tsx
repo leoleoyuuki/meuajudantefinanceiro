@@ -18,7 +18,6 @@ import {
   Loader2,
   Package,
   PlusCircle,
-  MoreVertical,
   Pencil,
   Trash,
 } from 'lucide-react';
@@ -34,12 +33,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 
 export default function ProductsPage() {
@@ -149,40 +142,39 @@ export default function ProductsPage() {
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {products.map((product) => (
               <Card key={product.id}>
-                <CardHeader className="flex flex-row items-start justify-between">
-                  <div>
-                    <CardTitle>{product.name}</CardTitle>
-                    {product.description && (
-                      <CardDescription>{product.description}</CardDescription>
-                    )}
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
+                <CardHeader>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <CardTitle>{product.name}</CardTitle>
+                      {product.description && (
+                        <CardDescription>
+                          {product.description}
+                        </CardDescription>
+                      )}
+                    </div>
+                    <div className="flex shrink-0 items-center">
+                      <Button
+                        asChild
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                      >
+                        <Link href={`/products/edit/${product.id}`}>
+                          <Pencil className="h-4 w-4" />
+                          <span className="sr-only">Editar</span>
+                        </Link>
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 shrink-0"
-                      >
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem asChild>
-                        <Link
-                          href={`/products/edit/${product.id}`}
-                          className="flex cursor-pointer items-center gap-2"
-                        >
-                          <Pencil className="h-4 w-4" /> Editar
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
+                        className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
                         onClick={() => setProductToDelete(product)}
-                        className="flex cursor-pointer items-center gap-2 text-destructive focus:text-destructive"
                       >
-                        <Trash className="h-4 w-4" /> Excluir
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                        <Trash className="h-4 w-4" />
+                        <span className="sr-only">Excluir</span>
+                      </Button>
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex justify-between rounded-lg border bg-muted/30 p-3 text-sm">
